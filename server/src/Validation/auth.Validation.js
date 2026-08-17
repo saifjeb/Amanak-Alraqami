@@ -48,3 +48,20 @@ export const registerValidation = Joi.object({
     .max(100)
     .default("avatar1"),
 });
+
+export const loginValidation = Joi.object({
+  nickname: Joi.string()
+    .trim()
+    .required()
+    .messages({
+      "string.empty": "Nickname is required",
+      "any.required": "Nickname is required",
+    }),
+
+  password: Joi.string()
+    .required()
+    .messages({
+      "string.empty": "Password is required",
+      "any.required": "Password is required",
+    }),
+});
