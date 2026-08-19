@@ -34,4 +34,7 @@ export const register = async (
   );
 
   return result.rows[0];
-};
+}
+export const saveRefreshTokens = async(id,token)=>{
+    await pool.query(``)
+}
