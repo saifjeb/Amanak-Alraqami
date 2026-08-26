@@ -1,6 +1,7 @@
 import {getQuestionsByAdventure,getQuestionById,getQuestionForAnswer} from "../Model/question.Model.js";
 import { getUserById } from "../Model/user.Model.js";
 import { getAdventureById } from "../Model/adventure.Model.js";
+import {recordQuestionAttempt} from "../Model/questionAttempt.Model.js";
 
 export const getQuestionsByAdventureController = async (req, res) => {
   try {
@@ -74,12 +75,12 @@ export const getQuestionByIdController = async (req, res) => {
   }
 };
 
+export const submitAnswerController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { answer } = req.body;
 
-export const submitAnswerController = async (req,res) => {
-    try {
-        const { id } = req.params;
-        const { answer } = req.body;
-        const user = await getUserById(req.user.id);
+    const user = await getUserById(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -88,8 +89,11 @@ export const submitAnswerController = async (req,res) => {
       });
     }
 
+    const question = await getQuestionForAnswer(
+      id,
+      user.age_group
+    );
 
-    const question =await getQuestionForAnswer(id,user.age_group);
     if (!question) {
       return res.status(404).json({
         success: false,
@@ -97,9 +101,20 @@ export const submitAnswerController = async (req,res) => {
       });
     }
 
-    const isCorrect =answer === question.correct_answer;
+    const isCorrect =
+      answer === question.correct_answer;
+
+    const result = await recordQuestionAttempt({
+      userId: user.id,
+      questionId: question.id,
+      selectedAnswer: answer,
+      isCorrect,
+      questionPoints: question.points,
+    });
+
     return res.status(200).json({
       success: true,
+
       correct: isCorrect,
 
       feedback_ar: isCorrect
@@ -110,11 +125,16 @@ export const submitAnswerController = async (req,res) => {
         ? question.feedback_correct_en
         : question.feedback_wrong_en,
 
-      points: isCorrect
-        ? question.points
-        : 0,
+      points: result.attempt.points_awarded,
+
+      total_points: result.totalPoints,
+
+      current_level: result.currentLevel,
+
+      attempt_id: result.attempt.id,
     });
-    } catch (error) {
+
+  } catch (error) {
     console.error(
       "Submit answer error:",
       error
