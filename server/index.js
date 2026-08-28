@@ -10,7 +10,7 @@ import adventureRoutes from "./src/Routes/adventure.Routes.js";
 import questionRoutes from "./src/Routes/question.Routes.js";
 import progressRoutes from "./src/Routes/progress.Routes.js";
 import badgeRoutes from "./src/Routes/badge.Routes.js";
-
+import assessmentRoutes from "./src/Routes/assessment.Routes.js";
 const app = express();
 app.use(helmet());
 app.use(cors({origin: process.env.CLIENT_URL || "http://localhost:5173",credentials: true,}));
@@ -24,6 +24,7 @@ app.use("/api/adventures", adventureRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/badges", badgeRoutes);
+app.use("/api/assessments",assessmentRoutes);
 
 
 const PORT = process.env.PORT || 3000;
