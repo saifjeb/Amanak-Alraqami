@@ -1,12 +1,16 @@
-import {getQuestionsByAdventure,getQuestionById,getQuestionForAnswer} from "../Model/question.Model.js";
+import {getQuestionsByAdventure,getQuestionById,getQuestionForAnswer,} from "../Model/question.Model.js";
 import { getUserById } from "../Model/user.Model.js";
 import { getAdventureById } from "../Model/adventure.Model.js";
-import {recordQuestionAttempt} from "../Model/questionAttempt.Model.js";
-import {syncAdventureProgress,} from "../Model/progress.Model.js";
+import { recordQuestionAttempt } from "../Model/questionAttempt.Model.js";
+import { syncAdventureProgress } from "../Model/progress.Model.js";
+import {unlockAdventureBadge,unlockCyberHeroBadge,} from "../Model/badge.Model.js";
+
 export const getQuestionsByAdventureController = async (req, res) => {
   try {
     const { adventureId } = req.params;
+
     const adventure = await getAdventureById(adventureId);
+
     if (!adventure) {
       return res.status(404).json({
         success: false,
@@ -15,6 +19,7 @@ export const getQuestionsByAdventureController = async (req, res) => {
     }
 
     const user = await getUserById(req.user.id);
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -24,13 +29,15 @@ export const getQuestionsByAdventureController = async (req, res) => {
 
     const questions = await getQuestionsByAdventure(
       adventureId,
-      user.age_group,
+      user.age_group
     );
+
     return res.status(200).json({
       success: true,
       message: "Questions fetched successfully",
       questions,
     });
+
   } catch (error) {
     console.error("Get questions error:", error);
 
@@ -44,7 +51,9 @@ export const getQuestionsByAdventureController = async (req, res) => {
 export const getQuestionByIdController = async (req, res) => {
   try {
     const { id } = req.params;
+
     const user = await getUserById(req.user.id);
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -52,7 +61,11 @@ export const getQuestionByIdController = async (req, res) => {
       });
     }
 
-    const question = await getQuestionById(id, user.age_group);
+    const question = await getQuestionById(
+      id,
+      user.age_group
+    );
+
     if (!question) {
       return res.status(404).json({
         success: false,
@@ -65,6 +78,7 @@ export const getQuestionByIdController = async (req, res) => {
       message: "Question fetched successfully",
       question,
     });
+
   } catch (error) {
     console.error("Get question error:", error);
 
@@ -112,15 +126,26 @@ export const submitAnswerController = async (req, res) => {
       questionPoints: question.points,
     });
 
-  const progress = await syncAdventureProgress(
-    user.id,
-    question.adventure_id,
-    user.age_group
-   );
+    const progress = await syncAdventureProgress(
+      user.id,
+      question.adventure_id,
+      user.age_group
+    );
 
+    let unlockedBadge = null;
+    let cyberHeroBadge = null;
+
+    if (progress.completed) {
+      unlockedBadge = await unlockAdventureBadge(
+        user.id,
+        question.adventure_id
+      );
+      cyberHeroBadge = await unlockCyberHeroBadge(
+        user.id
+      );
+    }
     return res.status(200).json({
       success: true,
-
       correct: isCorrect,
 
       feedback_ar: isCorrect
@@ -132,12 +157,10 @@ export const submitAnswerController = async (req, res) => {
         : question.feedback_wrong_en,
 
       points: result.attempt.points_awarded,
-
       total_points: result.totalPoints,
-
       current_level: result.currentLevel,
-
       attempt_id: result.attempt.id,
+
       progress: {
         adventure_id: progress.adventure_id,
         score: progress.score,
@@ -145,13 +168,15 @@ export const submitAnswerController = async (req, res) => {
         completed: progress.completed,
         completed_at: progress.completed_at,
       },
-});
+
+      new_badges: [
+        unlockedBadge,
+        cyberHeroBadge,
+      ].filter(Boolean),
+    });
 
   } catch (error) {
-    console.error(
-      "Submit answer error:",
-      error
-    );
+    console.error("Submit answer error:", error);
 
     return res.status(500).json({
       success: false,

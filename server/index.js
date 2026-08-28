@@ -9,7 +9,7 @@ import userRoutes from "./src/Routes/user.Routes.js";
 import adventureRoutes from "./src/Routes/adventure.Routes.js";
 import questionRoutes from "./src/Routes/question.Routes.js";
 import progressRoutes from "./src/Routes/progress.Routes.js";
-
+import badgeRoutes from "./src/Routes/badge.Routes.js";
 
 const app = express();
 app.use(helmet());
@@ -23,7 +23,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/adventures", adventureRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/progress", progressRoutes);
-
+app.use("/api/badges", badgeRoutes);
 
 
 const PORT = process.env.PORT || 3000;
