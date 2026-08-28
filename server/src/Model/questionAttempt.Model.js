@@ -12,9 +12,6 @@ export const recordQuestionAttempt = async ({
   try {
     await client.query("BEGIN");
 
-    // ========================================
-    // CORRECT ANSWER
-    // ========================================
     if (isCorrect) {
       const rewardedAttempt = await client.query(
         `
@@ -44,7 +41,7 @@ export const recordQuestionAttempt = async ({
         ]
       );
 
-      // First correct answer → award points
+
       if (rewardedAttempt.rows.length > 0) {
         const updatedUser = await client.query(
           `
@@ -71,9 +68,6 @@ export const recordQuestionAttempt = async ({
       }
     }
 
-    // ========================================
-    // WRONG ANSWER OR REPEATED CORRECT ANSWER
-    // ========================================
     const attemptResult = await client.query(
       `
       INSERT INTO question_attempts (

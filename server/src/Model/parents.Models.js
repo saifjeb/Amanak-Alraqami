@@ -1,10 +1,5 @@
 import pool from "../config/db.js";
 
-
-// ========================================
-// REGISTER PARENT
-// ========================================
-
 export const registerParent = async (
   name,
   email,
@@ -35,11 +30,6 @@ export const registerParent = async (
   return result.rows[0];
 };
 
-
-// ========================================
-// GET PARENT BY EMAIL
-// ========================================
-
 export const getParentByEmail = async (
   email
 ) => {
@@ -62,11 +52,6 @@ export const getParentByEmail = async (
   return result.rows[0];
 };
 
-
-// ========================================
-// GET PARENT BY ID
-// ========================================
-
 export const getParentById = async (id) => {
   const result = await pool.query(
     `
@@ -84,11 +69,6 @@ export const getParentById = async (id) => {
 
   return result.rows[0];
 };
-
-
-// ========================================
-// SAVE REFRESH TOKEN HASH
-// ========================================
 
 export const saveParentRefreshToken = async (
   id,

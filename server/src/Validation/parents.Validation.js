@@ -1,13 +1,7 @@
 import Joi from "joi";
 
-
-// ========================================
-// REGISTER VALIDATION
-// ========================================
-
 export const parentRegisterValidation =
   Joi.object({
-
     name: Joi.string()
       .trim()
       .min(2)
@@ -88,11 +82,6 @@ export const parentRegisterValidation =
       }),
 
   });
-
-
-// ========================================
-// LOGIN VALIDATION
-// ========================================
 
 export const parentLoginValidation =
   Joi.object({

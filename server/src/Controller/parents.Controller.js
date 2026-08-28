@@ -1,17 +1,10 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import {registerParent,getParentByEmail,getParentById,getParentByIdForAuth,saveParentRefreshToken,clearParentRefreshToken} from "../Model/parents.Models.js";
-
-import {
-  generateParentAccessToken,
-  generateParentRefreshToken,
-  hashToken,
-} from "../Utils/Tokens.Utils.js";
+import {generateParentAccessToken,generateParentRefreshToken,hashToken} from "../Utils/Tokens.Utils.js";
 
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
-
 const isProd = process.env.NODE_ENV === "production";
-
 const cookieOptions = {
   httpOnly: true,
   secure: isProd,
@@ -28,9 +21,7 @@ function publicParent(parent) {
 }
 async function issueParentTokens(res, parent) {
   const accessToken = generateParentAccessToken(parent);
-
   const refreshToken = generateParentRefreshToken(parent);
-
   await saveParentRefreshToken(parent.id, hashToken(refreshToken));
 
   res.cookie("parentAccessToken", accessToken, {
@@ -170,15 +161,8 @@ export async function parentMeController(req, res) {
     });
   }
 }
-
-
-// ========================================
-// REFRESH PARENT ACCESS TOKEN
-// ========================================
-
 export async function parentRefreshController(req, res) {
   try {
-    // Get refresh token from HttpOnly cookie
     const refreshToken =
       req.cookies.parentRefreshToken;
 
@@ -189,7 +173,7 @@ export async function parentRefreshController(req, res) {
       });
     }
 
-    // Verify JWT
+
     const decoded = jwt.verify(
       refreshToken,
       process.env.PARENT_REFRESH_SECRET
@@ -205,7 +189,6 @@ export async function parentRefreshController(req, res) {
       });
     }
 
-    // Find parent
     const parent =
       await getParentByIdForAuth(decoded.id);
 
@@ -215,8 +198,6 @@ export async function parentRefreshController(req, res) {
         message: "Invalid refresh token",
       });
     }
-
-    // Compare refresh-token hash with database
     const incomingTokenHash =
       hashToken(refreshToken);
 
@@ -229,10 +210,6 @@ export async function parentRefreshController(req, res) {
         message: "Invalid refresh token",
       });
     }
-
-    // Rotate tokens:
-    // generates new access + refresh tokens
-    // saves new refresh token hash in DB
     await issueParentTokens(
       res,
       parent

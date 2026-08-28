@@ -2,7 +2,7 @@ import {getQuestionsByAdventure,getQuestionById,getQuestionForAnswer} from "../M
 import { getUserById } from "../Model/user.Model.js";
 import { getAdventureById } from "../Model/adventure.Model.js";
 import {recordQuestionAttempt} from "../Model/questionAttempt.Model.js";
-
+import {syncAdventureProgress,} from "../Model/progress.Model.js";
 export const getQuestionsByAdventureController = async (req, res) => {
   try {
     const { adventureId } = req.params;
@@ -112,6 +112,12 @@ export const submitAnswerController = async (req, res) => {
       questionPoints: question.points,
     });
 
+  const progress = await syncAdventureProgress(
+    user.id,
+    question.adventure_id,
+    user.age_group
+   );
+
     return res.status(200).json({
       success: true,
 
@@ -132,7 +138,14 @@ export const submitAnswerController = async (req, res) => {
       current_level: result.currentLevel,
 
       attempt_id: result.attempt.id,
-    });
+      progress: {
+        adventure_id: progress.adventure_id,
+        score: progress.score,
+        earned_points: progress.earned_points,
+        completed: progress.completed,
+        completed_at: progress.completed_at,
+      },
+});
 
   } catch (error) {
     console.error(

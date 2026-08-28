@@ -1,20 +1,12 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
 import { register } from "../Model/auth.Model.js";
-
 import { getUserByNickname, getUserById } from "../Model/user.Model.js";
+import {generateAccessToken,generateRefreshToken} from "../Utils/Tokens.Utils.js";
 
-import {
-  generateAccessToken,
-  generateRefreshToken,
-} from "../Utils/Tokens.Utils.js";
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
-
 const isProd = process.env.NODE_ENV === "production";
-
 const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000;
-
 const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 const cookieOptions = {
   httpOnly: true,
@@ -47,19 +39,11 @@ function setAuthCookies(res, accessToken, refreshToken) {
 export async function registerController(req, res) {
   try {
     const { nickname, password, age_group, avatar } = req.body;
-
-    // Hash password
     const hashed_password = await bcrypt.hash(password, SALT_ROUNDS);
-
-    // Create user
     const user = await register(nickname, hashed_password, age_group, avatar);
-
-    // Generate tokens
     const accessToken = generateAccessToken(user);
-
     const refreshToken = generateRefreshToken(user);
 
-    // Save cookies
     setAuthCookies(res, accessToken, refreshToken);
 
     return res.status(201).json({

@@ -8,6 +8,8 @@ import parentRoutes from "./src/Routes/parents.Routes.js";
 import userRoutes from "./src/Routes/user.Routes.js";
 import adventureRoutes from "./src/Routes/adventure.Routes.js";
 import questionRoutes from "./src/Routes/question.Routes.js";
+import progressRoutes from "./src/Routes/progress.Routes.js";
+
 
 const app = express();
 app.use(helmet());
@@ -20,6 +22,9 @@ app.use("/api", parentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/adventures", adventureRoutes);
 app.use("/api/questions", questionRoutes);
+app.use("/api/progress", progressRoutes);
+
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
