@@ -220,3 +220,21 @@ export async function meController(req, res) {
     });
   }
 }
+
+export async function logoutController(req, res) {
+  try {
+    clearAuthCookies(res);
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout successful",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+}

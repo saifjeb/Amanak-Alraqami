@@ -8,7 +8,7 @@ import {adminGetAdventuresController,adminCreateAdventureController,adminUpdateA
 import {createAdventureValidation,updateAdventureValidation,} from "../Validation/adventure.Validation.js";
 import {adminGetQuestionsController,adminCreateQuestionController,adminUpdateQuestionController,adminTrashQuestionController,adminGetQuestionTrashController,adminRestoreQuestionController,adminPermanentDeleteQuestionController,} from "../Controller/question.Controller.js";
 import {createQuestionValidation,updateQuestionValidation,} from "../Validation/question.Validation.js";
-import {getAdminStudentStatusesController,} from "../Controller/adminStudentStatus.Controller.js";
+import {getAdminStudentStatusesController,getAdminStudentDetailsController} from "../Controller/adminStudentStatus.Controller.js";
 import {disableStudentController,enableStudentController,} from "../Controller/adminStudentManagement.Controller.js";
 import {adminLoginLimiter} from "../Middleware/rateLimit.Middleware.js";
 
@@ -18,6 +18,7 @@ router.get("/me", protectAdmin, adminMeController);
 router.post("/logout", protectAdmin, adminLogoutController);
 router.get("/dashboard", protectAdmin, getAdminDashboardController);
 router.get("/students/status",protectAdmin,getAdminStudentStatusesController);
+router.get("/students/:id",protectAdmin,getAdminStudentDetailsController);
 router.get("/adventures",protectAdmin,adminGetAdventuresController);
 router.post("/adventures",protectAdmin,validate(createAdventureValidation),adminCreateAdventureController);
 router.put("/adventures/:id",protectAdmin,validate(updateAdventureValidation),adminUpdateAdventureController);
