@@ -3,7 +3,6 @@ import pool from "../config/db.js";
 export const getAdminDashboardStats = async () => {
   const result = await pool.query(`
     SELECT
-
       (
         SELECT COUNT(*)
         FROM users
@@ -18,6 +17,7 @@ export const getAdminDashboardStats = async () => {
         SELECT COUNT(*)
         FROM adventures
         WHERE is_active = TRUE
+        AND deleted_at IS NULL
       )::integer AS total_adventures,
 
       (
@@ -67,6 +67,5 @@ export const getAdminDashboardStats = async () => {
         0
       ) AS average_improvement;
   `);
-
   return result.rows[0];
 };
