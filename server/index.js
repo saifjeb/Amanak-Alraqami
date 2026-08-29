@@ -11,6 +11,14 @@ import questionRoutes from "./src/Routes/question.Routes.js";
 import progressRoutes from "./src/Routes/progress.Routes.js";
 import badgeRoutes from "./src/Routes/badge.Routes.js";
 import assessmentRoutes from "./src/Routes/assessment.Routes.js";
+import adminRoutes from "./src/Routes/admin.Routes.js";
+
+
+
+
+
+
+
 const app = express();
 app.use(helmet());
 app.use(cors({origin: process.env.CLIENT_URL || "http://localhost:5173",credentials: true,}));
@@ -25,6 +33,10 @@ app.use("/api/questions", questionRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/badges", badgeRoutes);
 app.use("/api/assessments",assessmentRoutes);
+app.use("/api/admin", adminRoutes);
+
+
+
 
 
 const PORT = process.env.PORT || 3000;

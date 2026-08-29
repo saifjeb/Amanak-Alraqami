@@ -6,7 +6,7 @@ import { linkCodeValidation } from "../Validation/parentLink.Validation.js";
 import { validate } from "../Middleware/validate.Middleware.js";
 import { protectParent } from "../Middleware/parents.Middleware.js";
 import { protect } from "../Middleware/auth.Middleware.js";
-
+import {getParentChildDashboardController,} from "../Controller/parentDashboard.Controller.js";
 const route = express.Router();
 route.post("/parent/register",validate(parentRegisterValidation),parentRegisterController,);
 route.post("/parent/login",validate(parentLoginValidation),parentLoginController,);
@@ -16,5 +16,5 @@ route.post("/parent/refresh", parentRefreshController);
 route.post("/parent/link-code", protectParent, generateLinkCodeController);
 route.post("/parent/link",protect,validate(linkCodeValidation),linkChildToParentController,);
 route.get("/parent/children", protectParent, getLinkedChildrenController);
-
+route.get("/parent/children/:childId/dashboard",protectParent,getParentChildDashboardController);
 export default route;
