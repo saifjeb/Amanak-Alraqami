@@ -81,6 +81,7 @@ CREATE TABLE questions (
     feedback_wrong_en TEXT,
     points INTEGER NOT NULL DEFAULT 10 CHECK (points >= 0),
     display_order INTEGER NOT NULL DEFAULT 1,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_question_adventure
         FOREIGN KEY (adventure_id)
@@ -277,5 +278,9 @@ SELECT
 FROM users u
 LEFT JOIN attempts a ON a.user_id = u.id
 GROUP BY u.id,u.nickname,u.age_group;
+
+
+CREATE INDEX idx_questions_deleted_at
+ON questions(deleted_at);
 
 COMMIT;

@@ -29,6 +29,7 @@ export const syncAdventureProgress = async (
       WHERE q.adventure_id = $2
         AND q.age_group = $3
         AND q.question_type = 'adventure'
+        AND q.deleted_at IS NULL
     )
 
     INSERT INTO progress (

@@ -6,7 +6,8 @@ import { validate } from "../Middleware/validate.Middleware.js";
 import { protectAdmin } from "../Middleware/adminonly.Middleware.js";
 import {adminGetAdventuresController,adminCreateAdventureController,adminUpdateAdventureController,adminTrashAdventureController,adminGetAdventureTrashController,adminRestoreAdventureController,adminPermanentDeleteAdventureController,} from "../Controller/adventure.Controller.js";
 import {createAdventureValidation,updateAdventureValidation,} from "../Validation/adventure.Validation.js";
-
+import {adminGetQuestionsController,adminCreateQuestionController,adminUpdateQuestionController,adminTrashQuestionController,adminGetQuestionTrashController,adminRestoreQuestionController,adminPermanentDeleteQuestionController,} from "../Controller/question.Controller.js";
+import {createQuestionValidation,updateQuestionValidation,} from "../Validation/question.Validation.js";
 
 const router = express.Router();
 router.post("/login", validate(adminLoginValidation), adminLoginController);
@@ -20,4 +21,11 @@ router.delete("/adventures/:id",protectAdmin,adminTrashAdventureController);
 router.get("/trash/adventures",protectAdmin,adminGetAdventureTrashController);
 router.patch("/trash/adventures/:id/restore",protectAdmin,adminRestoreAdventureController);
 router.delete("/trash/adventures/:id/permanent",protectAdmin,adminPermanentDeleteAdventureController);
+router.get("/questions",protectAdmin,adminGetQuestionsController);
+router.post("/questions",protectAdmin,validate(createQuestionValidation),adminCreateQuestionController);
+router.put("/questions/:id",protectAdmin,validate(updateQuestionValidation),adminUpdateQuestionController);
+router.delete("/questions/:id",protectAdmin,adminTrashQuestionController);
+router.get("/trash/questions",protectAdmin,adminGetQuestionTrashController);
+router.patch("/trash/questions/:id/restore",protectAdmin,adminRestoreQuestionController);
+router.delete("/trash/questions/:id/permanent",protectAdmin,adminPermanentDeleteQuestionController);
 export default router;

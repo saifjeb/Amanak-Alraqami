@@ -19,6 +19,7 @@ export const getAssessmentQuestions = async (testType, ageGroup) => {
     FROM questions
     WHERE question_type = $1
       AND age_group = $2
+      AND deleted_at IS NULL
     ORDER BY display_order ASC;
     `,
     [testType, ageGroup],
@@ -36,6 +37,7 @@ export const getAssessmentQuestionsForScoring = async (testType, ageGroup) => {
     FROM questions
     WHERE question_type = $1
       AND age_group = $2
+      AND deleted_at IS NULL
     ORDER BY display_order ASC;
     `,
     [testType, ageGroup],
@@ -66,7 +68,6 @@ export const getExistingAssessmentAttempt = async (userId, testType) => {
 
   return result.rows[0] || null;
 };
-
 export const createAssessmentAttempt = async ({
   userId,
   testType,
@@ -84,6 +85,7 @@ export const createAssessmentAttempt = async ({
       score_percentage
     )
     VALUES ($1, $2, $3, $4, $5)
+
     RETURNING
       id,
       user_id,
