@@ -14,7 +14,6 @@ const cookieOptions = {
   sameSite: "lax",
   path: "/",
 };
-
 function publicUser(user) {
   return {
     id: user.id,
@@ -46,7 +45,8 @@ function clearAuthCookies(res) {
   res.clearCookie("accessToken", cookieOptions);
   res.clearCookie("refreshToken", cookieOptions);
 }
-export async function registerController(req, res) {
+
+export async function registerController(req, res, next) {
   try {
     const { nickname, password, age_group, avatar } = req.body;
     const hashed_password = await bcrypt.hash(password, SALT_ROUNDS);
@@ -56,11 +56,11 @@ export async function registerController(req, res) {
       age_group,
       avatar,
     );
+
     const user = (await updateUserLoginActivity(newUser.id)) || newUser;
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setAuthCookies(res, accessToken, refreshToken);
-
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
@@ -74,27 +74,20 @@ export async function registerController(req, res) {
       });
     }
 
-    console.error("Register error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    return next(error);
   }
 }
-export async function loginController(req, res) {
+
+export async function loginController(req, res, next) {
   try {
     const { nickname, password } = req.body;
-
     const user = await getUserByNickname(nickname);
-
     if (!user) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
-
     const passwordMatch = await bcrypt.compare(password, user.hashed_password);
     if (!passwordMatch) {
       return res.status(401).json({
@@ -102,16 +95,18 @@ export async function loginController(req, res) {
         message: "Invalid credentials",
       });
     }
+
     if (user.is_enabled === false) {
       clearAuthCookies(res);
-
       return res.status(403).json({
         success: false,
         message: "Account is disabled",
       });
     }
+
     const activeUser = await updateUserLoginActivity(user.id);
     if (!activeUser) {
+      clearAuthCookies(res);
       return res.status(403).json({
         success: false,
         message: "Account is disabled",
@@ -127,35 +122,39 @@ export async function loginController(req, res) {
       user: publicUser(activeUser),
     });
   } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    return next(error);
   }
 }
 
-export async function refreshTokenController(req, res) {
+export async function refreshTokenController(req, res, next) {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    return res.status(401).json({
+      success: false,
+      message: "Refresh token missing",
+    });
+  }
+  let decoded;
   try {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-      return res.status(401).json({
-        success: false,
-        message: "Refresh token missing",
-      });
-    }
+    decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+  } catch {
+    clearAuthCookies(res);
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired refresh token",
+    });
+  }
 
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+  try {
     const user = await getUserById(decoded.id);
-
     if (!user) {
       clearAuthCookies(res);
-
       return res.status(401).json({
         success: false,
         message: "Invalid refresh token",
       });
     }
+
     if (user.is_enabled === false) {
       clearAuthCookies(res);
       return res.status(403).json({
@@ -169,22 +168,16 @@ export async function refreshTokenController(req, res) {
       ...cookieOptions,
       maxAge: ACCESS_TOKEN_MAX_AGE,
     });
-
     return res.status(200).json({
       success: true,
       message: "Access token refreshed successfully",
     });
   } catch (error) {
-    console.error("Refresh error:", error);
-    clearAuthCookies(res);
-    return res.status(401).json({
-      success: false,
-      message: "Invalid or expired refresh token",
-    });
+    return next(error);
   }
 }
 
-export async function meController(req, res) {
+export async function meController(req, res, next) {
   try {
     if (!req.user || !req.user.id) {
       return res.status(401).json({
@@ -192,6 +185,7 @@ export async function meController(req, res) {
         message: "Not authenticated",
       });
     }
+
     const user = await getUserById(req.user.id);
     if (!user) {
       return res.status(404).json({
@@ -212,29 +206,18 @@ export async function meController(req, res) {
       user: publicUser(user),
     });
   } catch (error) {
-    console.error("ME ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    return next(error);
   }
 }
 
-export async function logoutController(req, res) {
+export async function logoutController(req, res, next) {
   try {
     clearAuthCookies(res);
-
     return res.status(200).json({
       success: true,
       message: "Logout successful",
     });
   } catch (error) {
-    console.error("Logout error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    return next(error);
   }
 }

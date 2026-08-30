@@ -1,17 +1,114 @@
 import pool from "../config/db.js";
 
-export const getQuestionsByAdventure = async (adventureId, ageGroup) => {
+export const getQuestionsByAdventure = async (
+  adventureId,
+  ageGroup,
+) => {
   const result = await pool.query(
-    `SELECT id,adventure_id,question_type,age_group,story_text_ar,story_text_en,question_ar,question_en,option_a_ar,option_a_en,option_b_ar,option_b_en,option_c_ar,option_c_en,points,display_order
-    FROM questions WHERE adventure_id = $1 AND age_group = $2 AND question_type = 'adventure' AND deleted_at IS NULL ORDER BY display_order ASC;
-    `,[adventureId, ageGroup],);
+    `
+    SELECT
+      q.id,
+      q.adventure_id,
+      q.question_type,
+      q.age_group,
+      q.story_text_ar,
+      q.story_text_en,
+      q.question_ar,
+      q.question_en,
+      q.option_a_ar,
+      q.option_a_en,
+      q.option_b_ar,
+      q.option_b_en,
+      q.option_c_ar,
+      q.option_c_en,
+      q.points,
+      q.display_order,
+
+      CASE
+        WHEN m.id IS NOT NULL
+          AND m.deleted_at IS NULL
+        THEN m.id
+        ELSE NULL
+      END AS image_media_id,
+
+      CASE
+        WHEN m.id IS NOT NULL
+          AND m.deleted_at IS NULL
+        THEN '/api/media/' || m.id
+        ELSE NULL
+      END AS image_url
+
+    FROM questions q
+
+    LEFT JOIN media m
+      ON m.id = q.image_media_id
+
+    WHERE q.adventure_id = $1
+      AND q.age_group = $2
+      AND q.question_type = 'adventure'
+      AND q.deleted_at IS NULL
+
+    ORDER BY q.display_order ASC;
+    `,
+    [adventureId, ageGroup],
+  );
+
   return result.rows;
 };
 
-export const getQuestionById = async (id, ageGroup) => {
-  const result = await pool.query(`SELECT id,adventure_id,question_type,age_group,story_text_ar,story_text_en,question_ar,question_en,option_a_ar,option_a_en,option_b_ar,option_b_en,option_c_ar,option_c_en,points,display_order
-    FROM questions WHERE id = $1 AND age_group = $2 AND question_type = 'adventure' AND deleted_at IS NULL
-    LIMIT 1;`,[id, ageGroup],);
+export const getQuestionById = async (
+  id,
+  ageGroup,
+) => {
+  const result = await pool.query(
+    `
+    SELECT
+      q.id,
+      q.adventure_id,
+      q.question_type,
+      q.age_group,
+      q.story_text_ar,
+      q.story_text_en,
+      q.question_ar,
+      q.question_en,
+      q.option_a_ar,
+      q.option_a_en,
+      q.option_b_ar,
+      q.option_b_en,
+      q.option_c_ar,
+      q.option_c_en,
+      q.points,
+      q.display_order,
+
+      CASE
+        WHEN m.id IS NOT NULL
+          AND m.deleted_at IS NULL
+        THEN m.id
+        ELSE NULL
+      END AS image_media_id,
+
+      CASE
+        WHEN m.id IS NOT NULL
+          AND m.deleted_at IS NULL
+        THEN '/api/media/' || m.id
+        ELSE NULL
+      END AS image_url
+
+    FROM questions q
+
+    LEFT JOIN media m
+      ON m.id = q.image_media_id
+
+    WHERE q.id = $1
+      AND q.age_group = $2
+      AND q.question_type = 'adventure'
+      AND q.deleted_at IS NULL
+
+    LIMIT 1;
+    `,
+    [id, ageGroup],
+  );
+
   return result.rows[0] || null;
 };
 
@@ -25,12 +122,58 @@ export const getQuestionForAnswer = async (id, ageGroup) => {
 };
 
 export const getAllQuestionsAdmin = async () => {
-  const result = await pool.query(
-    `SELECT q.id,q.adventure_id,a.title_en AS adventure_title_en,q.question_type,q.age_group,q.story_text_ar,q.story_text_en,q.question_ar,q.question_en,
-      q.option_a_ar,q.option_a_en,q.option_b_ar,q.option_b_en,q.option_c_ar,q.option_c_en,q.correct_answer,q.feedback_correct_ar,q.feedback_correct_en,q.feedback_wrong_ar,
-      q.feedback_wrong_en,q.points,q.display_order,q.created_at,q.deleted_at
-    FROM questions q LEFT JOIN adventures a ON a.id = q.adventure_id
-    WHERE q.deleted_at IS NULL ORDER BY q.question_type,q.age_group,q.adventure_id NULLS FIRST,q.display_order;`,);
+  const result = await pool.query(`
+    SELECT
+      q.id,
+      q.adventure_id,
+      a.title_en AS adventure_title_en,
+      q.question_type,
+      q.age_group,
+      q.story_text_ar,
+      q.story_text_en,
+      q.question_ar,
+      q.question_en,
+      q.option_a_ar,
+      q.option_a_en,
+      q.option_b_ar,
+      q.option_b_en,
+      q.option_c_ar,
+      q.option_c_en,
+      q.correct_answer,
+      q.feedback_correct_ar,
+      q.feedback_correct_en,
+      q.feedback_wrong_ar,
+      q.feedback_wrong_en,
+      q.points,
+      q.display_order,
+      q.created_at,
+      q.deleted_at,
+      q.image_media_id,
+
+      CASE
+        WHEN m.id IS NOT NULL
+          AND m.deleted_at IS NULL
+        THEN '/api/media/' || m.id
+        ELSE NULL
+      END AS image_url
+
+    FROM questions q
+
+    LEFT JOIN adventures a
+      ON a.id = q.adventure_id
+
+    LEFT JOIN media m
+      ON m.id = q.image_media_id
+
+    WHERE q.deleted_at IS NULL
+
+    ORDER BY
+      q.question_type,
+      q.age_group,
+      q.adventure_id NULLS FIRST,
+      q.display_order;
+  `);
+
   return result.rows;
 };
 
@@ -229,5 +372,12 @@ export const permanentlyDeleteQuestion = async (id) => {
     [id],
   );
 
+  return result.rows[0] || null;
+};
+
+export const setQuestionImage = async (questionId,mediaId,) => {
+  const result = await pool.query(
+    `UPDATE questions SET image_media_id = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING id,adventure_id,question_type,age_group,question_ar,question_en,image_media_id;`,
+    [mediaId, questionId],);
   return result.rows[0] || null;
 };

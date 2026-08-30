@@ -1,13 +1,12 @@
 import crypto from "crypto";
-import {createLinkCode,useLinkCode,getLinkedChildren,} from "../Model/parentLink.Model.js";
+import {createLinkCode,useLinkCode,getLinkedChildren} from "../Model/parentLink.Model.js";
 
-export const generateLinkCodeController = async (req, res) => {
+export const generateLinkCodeController = async (req, res, next) => {
   try {
     const parentId = req.parent.id;
     let linkCode = null;
     for (let attempt = 0; attempt < 5; attempt++) {
       const code = crypto.randomInt(0, 1000000).toString().padStart(6, "0");
-
       try {
         linkCode = await createLinkCode(parentId, code);
         break;
@@ -19,31 +18,26 @@ export const generateLinkCodeController = async (req, res) => {
     }
 
     if (!linkCode) {
-      return res.status(500).json({
-        success: false,
-        message: "Could not generate link code",
-      });
+      const error = new Error("Unable to generate unique link code");
+      return next(error);
     }
 
     return res.status(201).json({
       success: true,
       message: "Link code generated successfully",
+
       link_code: {
         code: linkCode.code,
+
         expires_at: linkCode.expires_at,
       },
     });
   } catch (error) {
-    console.error("Generate link code error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    return next(error);
   }
 };
 
-export const linkChildToParentController = async (req, res) => {
+export const linkChildToParentController = async (req, res, next) => {
   try {
     const { code } = req.body;
 
@@ -70,26 +64,27 @@ export const linkChildToParentController = async (req, res) => {
           message: "Link code has expired",
         });
       }
+
+      const error = new Error("Unexpected link-code result");
+
+      return next(error);
     }
 
     return res.status(200).json({
       success: true,
+
       message: result.alreadyLinked
         ? "Child is already linked to this parent"
         : "Child linked to parent successfully",
+
       already_linked: result.alreadyLinked,
     });
   } catch (error) {
-    console.error("Link child error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    return next(error);
   }
 };
 
-export const getLinkedChildrenController = async (req, res) => {
+export const getLinkedChildrenController = async (req, res, next) => {
   try {
     const children = await getLinkedChildren(req.parent.id);
 
@@ -98,11 +93,6 @@ export const getLinkedChildrenController = async (req, res) => {
       children,
     });
   } catch (error) {
-    console.error("Get linked children error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    return next(error);
   }
 };

@@ -1,6 +1,7 @@
 node_modules/
-server/node_modules/
+server/node_modules/uploads/
 client/node_modules/
 
 .env
 server/.env
+

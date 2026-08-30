@@ -1,26 +1,49 @@
 import pool from "../config/db.js";
 
-export const getAssessmentQuestions = async (testType, ageGroup) => {
+export const getAssessmentQuestions = async (
+  testType,
+  ageGroup,
+) => {
   const result = await pool.query(
     `
     SELECT
-      id,
-      question_type,
-      age_group,
-      question_ar,
-      question_en,
-      option_a_ar,
-      option_a_en,
-      option_b_ar,
-      option_b_en,
-      option_c_ar,
-      option_c_en,
-      display_order
-    FROM questions
-    WHERE question_type = $1
-      AND age_group = $2
-      AND deleted_at IS NULL
-    ORDER BY display_order ASC;
+      q.id,
+      q.question_type,
+      q.age_group,
+      q.question_ar,
+      q.question_en,
+      q.option_a_ar,
+      q.option_a_en,
+      q.option_b_ar,
+      q.option_b_en,
+      q.option_c_ar,
+      q.option_c_en,
+      q.display_order,
+
+      CASE
+        WHEN m.id IS NOT NULL
+          AND m.deleted_at IS NULL
+        THEN m.id
+        ELSE NULL
+      END AS image_media_id,
+
+      CASE
+        WHEN m.id IS NOT NULL
+          AND m.deleted_at IS NULL
+        THEN '/api/media/' || m.id
+        ELSE NULL
+      END AS image_url
+
+    FROM questions q
+
+    LEFT JOIN media m
+      ON m.id = q.image_media_id
+
+    WHERE q.question_type = $1
+      AND q.age_group = $2
+      AND q.deleted_at IS NULL
+
+    ORDER BY q.display_order ASC;
     `,
     [testType, ageGroup],
   );
