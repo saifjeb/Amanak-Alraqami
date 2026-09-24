@@ -1,0 +1,25 @@
+.admin-analytics-page{min-height:100vh;background:var(--admin-bg,#f3f6fa);color:#152c49}
+.admin-analytics-container{width:min(1420px,calc(100% - 48px));margin:0 auto;padding:28px 0 60px}
+.admin-analytics-loading{min-height:calc(100vh - 76px);display:grid;place-items:center;align-content:center;gap:14px}
+.admin-page-heading-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:20px}
+.admin-page-heading-row>div>span{color:#1458df;font-size:10px;font-weight:950;letter-spacing:.9px}
+.admin-page-heading-row h1{margin:5px 0 4px;font-size:32px;color:#111827}
+.admin-page-heading-row p{margin:0;color:#6b7788;font-size:13px}
+.admin-page-refresh{height:42px;padding:0 14px;border:1px solid #d8e2ef;border-radius:10px;background:#fff;color:#1458df;display:inline-flex;align-items:center;gap:8px;font-weight:900;cursor:pointer}
+.admin-page-refresh:disabled{opacity:.65;cursor:wait}
+.admin-refresh-spin{animation:admin-refresh-spin .75s linear infinite}@keyframes admin-refresh-spin{to{transform:rotate(360deg)}}
+.admin-page-warning{margin-bottom:18px;padding:12px 14px;border:1px solid #fed7aa;border-radius:11px;background:#fff8ed;color:#9a5310;font-size:12px;font-weight:800}
+.analytics-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:18px}
+.analytics-kpi-grid article{min-height:126px;padding:18px 20px;border:1px solid #e0e6ed;border-radius:14px;background:#fff;box-shadow:0 2px 7px rgba(26,48,75,.05);display:grid;grid-template-columns:1fr auto;grid-template-areas:'label icon' 'value icon' 'small icon';align-items:center}
+.analytics-kpi-grid article>svg{grid-area:icon;width:44px;height:44px;padding:10px;border-radius:50%;background:#eef3f9;color:#1458df}
+.analytics-kpi-grid article>span{grid-area:label;color:#69778a;font-size:12px}
+.analytics-kpi-grid article>strong{grid-area:value;font-size:28px;color:#111827}
+.analytics-kpi-grid article>small{grid-area:small;color:#8190a2;font-size:10px}
+.analytics-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.analytics-panel{padding:22px 24px;border:1px solid #e0e6ed;border-radius:14px;background:#fff;box-shadow:0 2px 7px rgba(26,48,75,.05)}
+.analytics-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.analytics-panel-heading span{color:#1458df;font-size:9px;font-weight:950;letter-spacing:.8px}.analytics-panel-heading h2{margin:4px 0 0;font-size:20px;color:#182334}.analytics-panel-heading>svg{color:#1458df}
+.analytics-bars{display:grid;gap:18px}.analytics-bar-row>div:first-child{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:12px;color:#667487}.analytics-bar-row strong{color:#182334}.analytics-track{height:10px;border-radius:999px;background:#eef2f7;overflow:hidden}.analytics-track i{display:block;height:100%;min-width:2px;border-radius:inherit;background:linear-gradient(90deg,#1458df,#4d88f2)}
+.analytics-highlight{margin-top:20px;padding:13px 14px;border-radius:11px;background:#eef5ff;color:#1458df;display:flex;align-items:center;gap:10px}.analytics-highlight div{display:flex;flex:1;align-items:center;justify-content:space-between;gap:12px}.analytics-highlight span{font-size:11px;font-weight:800}.analytics-highlight strong{font-size:18px}
+.analytics-stat-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.analytics-stat-list>div{padding:14px;border:1px solid #edf1f5;border-radius:10px;background:#fafcff;display:flex;align-items:center;justify-content:space-between;gap:10px}.analytics-stat-list span{color:#65758a;font-size:11px}.analytics-stat-list strong{font-size:20px;color:#17304f}
+@media(max-width:1000px){.analytics-kpi-grid{grid-template-columns:repeat(2,1fr)}.analytics-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.admin-analytics-container{width:calc(100% - 24px)}.admin-page-heading-row{flex-direction:column}.analytics-kpi-grid{grid-template-columns:1fr}.analytics-stat-list{grid-template-columns:1fr}.admin-page-refresh{width:100%;justify-content:center}}

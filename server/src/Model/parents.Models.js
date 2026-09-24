@@ -1,10 +1,8 @@
 import pool from "../config/db.js";
 
-export const registerParent = async (
-  name,
-  email,
-  hashed_password
-) => {
+export const registerParent = async (name, email, hashed_password) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
   const result = await pool.query(
     `
     INSERT INTO parents (
@@ -18,21 +16,18 @@ export const registerParent = async (
       id,
       name,
       email,
+      email_verified_at,
       created_at;
     `,
-    [
-      name,
-      email,
-      hashed_password,
-    ]
+    [name, normalizedEmail, hashed_password],
   );
 
   return result.rows[0];
 };
 
-export const getParentByEmail = async (
-  email
-) => {
+export const getParentByEmail = async (email) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
   const result = await pool.query(
     `
     SELECT
@@ -41,15 +36,16 @@ export const getParentByEmail = async (
       email,
       hashed_password,
       refresh_token,
+      email_verified_at,
       created_at
     FROM parents
-    WHERE email = $1
+    WHERE LOWER(email) = LOWER($1)
     LIMIT 1;
     `,
-    [email]
+    [normalizedEmail],
   );
 
-  return result.rows[0];
+  return result.rows[0] || null;
 };
 
 export const getParentById = async (id) => {
@@ -59,47 +55,39 @@ export const getParentById = async (id) => {
       id,
       name,
       email,
+      email_verified_at,
       created_at
     FROM parents
     WHERE id = $1
     LIMIT 1;
     `,
-    [id]
+    [id],
   );
 
-  return result.rows[0];
+  return result.rows[0] || null;
 };
 
-export const saveParentRefreshToken = async (
-  id,
-  hashedToken
-) => {
+export const saveParentRefreshToken = async (id, hashedToken) => {
   await pool.query(
     `
     UPDATE parents
     SET refresh_token = $1
     WHERE id = $2;
     `,
-    [
-      hashedToken,
-      id,
-    ]
+    [hashedToken, id],
   );
 };
 
-export const clearParentRefreshToken = async (
-  id
-) => {
+export const clearParentRefreshToken = async (id) => {
   await pool.query(
     `
     UPDATE parents
     SET refresh_token = NULL
     WHERE id = $1;
     `,
-    [id]
+    [id],
   );
 };
-
 
 export const getParentByIdForAuth = async (id) => {
   const result = await pool.query(
@@ -110,13 +98,14 @@ export const getParentByIdForAuth = async (id) => {
       email,
       hashed_password,
       refresh_token,
+      email_verified_at,
       created_at
     FROM parents
     WHERE id = $1
     LIMIT 1;
     `,
-    [id]
+    [id],
   );
 
-  return result.rows[0];
+  return result.rows[0] || null;
 };

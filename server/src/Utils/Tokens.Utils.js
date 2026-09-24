@@ -14,6 +14,7 @@ export const generateAccessToken = (user) => {
     }
   );
 };
+
 export const generateRefreshToken = (user) => {
   return jwt.sign(
     {
@@ -26,6 +27,7 @@ export const generateRefreshToken = (user) => {
     }
   );
 };
+
 export const generateParentAccessToken = (parent) => {
   return jwt.sign(
     {
@@ -52,9 +54,44 @@ export const generateParentRefreshToken = (parent) => {
     }
   );
 };
+
 export const hashToken = (token) => {
   return crypto
     .createHash("sha256")
     .update(token)
+    .digest("hex");
+};
+
+export const generatePasswordResetToken = () => {
+  const token = crypto.randomBytes(32).toString("hex");
+
+  return {
+    token,
+    tokenHash: hashToken(token),
+  };
+};
+
+export const generateEmailVerificationCode = () => {
+  return crypto
+    .randomInt(100000, 1000000)
+    .toString();
+};
+
+export const hashEmailVerificationCode = (
+  parentId,
+  code
+) => {
+  const secret =
+    process.env.EMAIL_VERIFICATION_SECRET;
+
+  if (!secret) {
+    throw new Error(
+      "EMAIL_VERIFICATION_SECRET is not configured"
+    );
+  }
+
+  return crypto
+    .createHmac("sha256", secret)
+    .update(`${parentId}:${code}`)
     .digest("hex");
 };

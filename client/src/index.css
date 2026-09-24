@@ -1,108 +1,14 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Kufi+Arabic:wght@400;500;600;700;800;900&display=swap');
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+:root{
+  font-family:"Inter",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  color:#123a6d;background:#f4f8fc;
+  --amanak-blue:#1268e8;--amanak-blue-dark:#0a4fb3;--amanak-navy:#0a2d61;--amanak-navy-2:#123f76;
+  --amanak-orange:#ff7a28;--amanak-mint:#17bf8f;--amanak-yellow:#ffc84a;--amanak-purple:#744cf5;
+  --amanak-ink:#123a6d;--amanak-muted:#6f8499;--amanak-bg:#f4f8fc;--amanak-card:#fff;--amanak-line:#e4edf5;
+  --amanak-shadow:0 14px 42px rgba(26,75,122,.08);--amanak-radius:24px;
 }
+*{box-sizing:border-box}html{min-width:320px;min-height:100%;scroll-behavior:smooth}body{margin:0;min-width:320px;min-height:100vh;background:var(--amanak-bg);color:var(--amanak-ink)}html[dir="rtl"] body{font-family:"Noto Kufi Arabic","Tahoma","Arial",sans-serif;letter-spacing:0}button,input,textarea,select{font:inherit}button,a{-webkit-tap-highlight-color:transparent}button{border:0}a{color:inherit}img{max-width:100%}#root{min-height:100vh}::selection{background:rgba(18,104,232,.18);color:#0a2d61}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(18,104,232,.22);outline-offset:2px}@keyframes amanak-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-body {
-  margin: 0;
-}
-
-#root {
-  margin: 0 auto;
-  text-align: center;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
+.amanak-fatal-error{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 15% 15%,#dff2ff,transparent 34%),#f4f8fc;color:#0a2d61}.amanak-fatal-error section{width:min(620px,100%);padding:42px;border:1px solid #e2ebf4;border-radius:30px;background:white;text-align:center;box-shadow:0 24px 70px rgba(26,75,122,.12)}.amanak-fatal-icon{width:92px;height:92px;margin:0 auto 14px;display:grid;place-items:center;border-radius:26px;background:#e9f4ff;font-size:44px}.amanak-fatal-error h1{margin:0 0 10px}.amanak-fatal-error p{margin:0;color:#6f8499;line-height:1.7}.amanak-fatal-error section>div:last-child{margin-top:20px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}.amanak-fatal-error button,.amanak-fatal-error a{padding:11px 15px;border-radius:12px;text-decoration:none;font-weight:900;cursor:pointer}.amanak-fatal-error button{background:#1268e8;color:white}.amanak-fatal-error a{background:#edf4fb;color:#0a2d61}

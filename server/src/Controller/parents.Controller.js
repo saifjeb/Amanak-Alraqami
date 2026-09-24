@@ -1,16 +1,31 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import {registerParent,getParentByEmail,getParentById,getParentByIdForAuth,saveParentRefreshToken,clearParentRefreshToken} from "../Model/parents.Models.js";
-import {generateParentAccessToken,generateParentRefreshToken,hashToken} from "../Utils/Tokens.Utils.js";
+import {
+  registerParent,
+  getParentByEmail,
+  getParentById,
+  getParentByIdForAuth,
+  saveParentRefreshToken,
+  clearParentRefreshToken,
+} from "../Model/parents.Models.js";
+import {
+  generateParentAccessToken,
+  generateParentRefreshToken,
+  hashToken,
+} from "../Utils/Tokens.Utils.js";
+import { createAndSendParentVerificationCode } from "../Utils/parentEmailVerification.Utils.js";
 
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
+
 const isProd = process.env.NODE_ENV === "production";
+
 const cookieOptions = {
   httpOnly: true,
   secure: isProd,
   sameSite: "lax",
   path: "/",
 };
+
 function publicParent(parent) {
   return {
     id: parent.id,
@@ -19,9 +34,12 @@ function publicParent(parent) {
     created_at: parent.created_at,
   };
 }
+
 async function issueParentTokens(res, parent) {
   const accessToken = generateParentAccessToken(parent);
+
   const refreshToken = generateParentRefreshToken(parent);
+
   await saveParentRefreshToken(parent.id, hashToken(refreshToken));
 
   res.cookie("parentAccessToken", accessToken, {
@@ -43,12 +61,14 @@ export async function parentRegisterController(req, res) {
 
     const parent = await registerParent(name, email, hashed_password);
 
-    await issueParentTokens(res, parent);
+    createAndSendParentVerificationCode(parent).catch((emailError) => {
+      console.error("Parent verification email error:", emailError);
+    });
 
     return res.status(201).json({
       success: true,
-      message: "Account created successfully",
-
+      requiresEmailVerification: true,
+      message: "Account created successfully. Please verify your email.",
       parent: publicParent(parent),
     });
   } catch (error) {
@@ -93,12 +113,21 @@ export async function parentLoginController(req, res) {
       });
     }
 
+    if (!parent.email_verified_at) {
+      return res.status(403).json({
+        success: false,
+        requiresEmailVerification: true,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email before signing in.",
+        email: parent.email,
+      });
+    }
+
     await issueParentTokens(res, parent);
 
     return res.status(200).json({
       success: true,
       message: "Login successful",
-
       parent: publicParent(parent),
     });
   } catch (error) {
@@ -121,7 +150,9 @@ export async function parentLogoutController(req, res) {
         process.env.PARENT_REFRESH_SECRET,
       );
 
-      await clearParentRefreshToken(decoded.id);
+      if (decoded.type === "parent" && decoded.id) {
+        await clearParentRefreshToken(decoded.id);
+      }
     }
   } catch (error) {
     console.error("Parent logout error:", error);
@@ -148,6 +179,21 @@ export async function parentMeController(req, res) {
       });
     }
 
+    if (!parent.email_verified_at) {
+      await clearParentRefreshToken(parent.id);
+
+      res.clearCookie("parentAccessToken", cookieOptions);
+
+      res.clearCookie("parentRefreshToken", cookieOptions);
+
+      return res.status(403).json({
+        success: false,
+        requiresEmailVerification: true,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email before signing in.",
+      });
+    }
+
     return res.status(200).json({
       success: true,
       parent: publicParent(parent),
@@ -161,10 +207,10 @@ export async function parentMeController(req, res) {
     });
   }
 }
+
 export async function parentRefreshController(req, res) {
   try {
-    const refreshToken =
-      req.cookies.parentRefreshToken;
+    const refreshToken = req.cookies.parentRefreshToken;
 
     if (!refreshToken) {
       return res.status(401).json({
@@ -173,24 +219,16 @@ export async function parentRefreshController(req, res) {
       });
     }
 
+    const decoded = jwt.verify(refreshToken, process.env.PARENT_REFRESH_SECRET);
 
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.PARENT_REFRESH_SECRET
-    );
-
-    if (
-      decoded.type !== "parent" ||
-      !decoded.id
-    ) {
+    if (decoded.type !== "parent" || !decoded.id) {
       return res.status(401).json({
         success: false,
         message: "Invalid refresh token",
       });
     }
 
-    const parent =
-      await getParentByIdForAuth(decoded.id);
+    const parent = await getParentByIdForAuth(decoded.id);
 
     if (!parent) {
       return res.status(401).json({
@@ -198,39 +236,43 @@ export async function parentRefreshController(req, res) {
         message: "Invalid refresh token",
       });
     }
-    const incomingTokenHash =
-      hashToken(refreshToken);
 
-    if (
-      !parent.refresh_token ||
-      incomingTokenHash !== parent.refresh_token
-    ) {
+    if (!parent.email_verified_at) {
+      await clearParentRefreshToken(parent.id);
+
+      res.clearCookie("parentAccessToken", cookieOptions);
+
+      res.clearCookie("parentRefreshToken", cookieOptions);
+
+      return res.status(403).json({
+        success: false,
+        requiresEmailVerification: true,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email before signing in.",
+      });
+    }
+
+    const incomingTokenHash = hashToken(refreshToken);
+
+    if (!parent.refresh_token || incomingTokenHash !== parent.refresh_token) {
       return res.status(401).json({
         success: false,
         message: "Invalid refresh token",
       });
     }
-    await issueParentTokens(
-      res,
-      parent
-    );
+
+    await issueParentTokens(res, parent);
 
     return res.status(200).json({
       success: true,
-      message:
-        "Access token refreshed successfully",
+      message: "Access token refreshed successfully",
     });
-
   } catch (error) {
-    console.error(
-      "Parent refresh error:",
-      error
-    );
+    console.error("Parent refresh error:", error);
 
     return res.status(401).json({
       success: false,
-      message:
-        "Invalid or expired refresh token",
+      message: "Invalid or expired refresh token",
     });
   }
 }

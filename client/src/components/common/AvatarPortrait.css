@@ -1,0 +1,14 @@
+.avatar-portrait {
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #e9f4ff, #fff);
+  box-shadow: inset 0 0 0 1px rgba(14, 72, 139, .08);
+}
+.avatar-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; }
+.avatar-portrait-sm { width: 34px; height: 34px; }
+.avatar-portrait-md { width: 46px; height: 46px; }
+.avatar-portrait-lg { width: 68px; height: 68px; }
+.avatar-portrait-xl { width: 92px; height: 92px; }

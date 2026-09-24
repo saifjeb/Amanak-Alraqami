@@ -1,0 +1,30 @@
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 42px;
+  padding: 5px 7px;
+  border: 1px solid rgba(22, 119, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 8px 24px rgba(18, 58, 109, 0.08);
+  color: #123a6d;
+  backdrop-filter: blur(10px);
+}
+
+.language-toggle > svg { margin-inline: 3px; color: #1677ff; }
+.language-toggle > span { color: #a0afbf; font-size: 11px; }
+.language-toggle button {
+  min-width: 38px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #667d96;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.language-toggle button.active { background: #1268e8; color: white; }
+.language-toggle.compact { min-height: 34px; padding: 3px 5px; }
+.language-toggle.compact button { min-width: 32px; padding: 4px 6px; font-size: 10px; }

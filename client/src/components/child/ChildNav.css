@@ -1,0 +1,43 @@
+.child-side-nav{
+  position:fixed;
+  inset-block:14px;
+  inset-inline-start:14px;
+  width:226px;
+  padding:14px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  border:1px solid #e2ebf4;
+  border-radius:26px;
+  background:rgba(255,255,255,.97);
+  box-shadow:0 22px 60px rgba(28,78,126,.12);
+  z-index:90;
+}
+.child-side-brand{display:flex;align-items:center;gap:10px;padding:4px 7px 14px;border-bottom:1px solid #edf2f7;text-decoration:none}.child-side-brand img{width:46px;height:46px;object-fit:contain}.child-side-brand span{min-width:0;display:flex;flex-direction:column}.child-side-brand strong{color:#0a2d61;font-size:13px;font-weight:950;white-space:nowrap}.child-side-brand small{margin-top:2px;color:#8498ab;font-size:8px;font-weight:800;white-space:nowrap}.child-side-nav nav{display:grid;gap:5px}.child-side-link{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:13px;color:#54718d;text-decoration:none;font-size:10px;font-weight:900;transition:.2s ease}.child-side-link:hover{background:#f2f8ff;color:#1268e8}.child-side-link.active{background:linear-gradient(135deg,#1268e8,#167cf5);color:#fff;box-shadow:0 10px 22px rgba(18,104,232,.20)}.child-side-safety-card{margin-top:auto;padding:15px 13px;border-radius:18px;background:linear-gradient(155deg,#ecfff7,#eef7ff);color:#0d735a;text-align:center}.child-side-safety-card svg{margin-bottom:6px;color:#17b889}.child-side-safety-card strong{display:block;font-size:10px}.child-side-safety-card p{margin:6px 0 0;color:#618b7f;font-size:8px;line-height:1.6;font-weight:700}
+.child-topbar{
+  position:fixed;
+  inset-block-start:14px;
+  inset-inline-start:254px;
+  inset-inline-end:14px;
+  min-height:68px;
+  padding:9px 12px 9px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  border:1px solid #e2ebf4;
+  border-radius:22px;
+  background:rgba(255,255,255,.96);
+  box-shadow:0 14px 40px rgba(28,78,126,.09);
+  backdrop-filter:blur(16px);
+  z-index:85;
+}
+.child-topbar-greeting{display:flex;align-items:center;gap:10px;min-width:0}.child-topbar-greeting>div{min-width:0;display:flex;flex-direction:column}.child-topbar-greeting strong{color:#0a2d61;font-size:12px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.child-topbar-greeting small{margin-top:2px;color:#7e93a7;font-size:8px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.child-topbar-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}.child-points-chip{padding:8px 10px;border-radius:999px;background:#fff7dc;color:#8c6800;font-size:9px;font-weight:950;white-space:nowrap}.child-user-chip{display:flex;align-items:center;gap:7px;padding:4px 8px 4px 5px;border-radius:999px;background:#f5f9fd;border:1px solid #e7eef5;text-decoration:none}.child-user-chip>span{display:flex;flex-direction:column;max-width:95px;min-width:0}.child-user-chip strong{color:#153e70;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.child-user-chip small{color:#8094a9;font-size:7px}.child-logout-button{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:#fff0f0;color:#c74747;cursor:pointer}
+.child-dashboard-page,.adventures-page,.adventure-details-page,.question-page,.badges-page,.assessment-page,.child-profile-page,.link-parent-page{padding-inline-start:240px!important;padding-top:88px!important}
+html[dir="rtl"] .child-topbar{padding:9px 16px 9px 12px}
+@media(max-width:900px){
+  .child-side-nav{position:relative;inset:auto;width:calc(100% - 24px);margin:12px auto 0;min-height:auto;display:grid;grid-template-columns:auto 1fr;align-items:center;border-radius:22px}.child-side-brand{border-bottom:0;padding:0}.child-side-brand small{display:none}.child-side-nav nav{display:flex;justify-content:flex-end;overflow-x:auto;scrollbar-width:none}.child-side-nav nav::-webkit-scrollbar{display:none}.child-side-link{flex:0 0 auto}.child-side-safety-card{display:none}.child-topbar{position:relative;inset:auto;width:calc(100% - 24px);margin:8px auto 0;border-radius:18px}.child-dashboard-page,.adventures-page,.adventure-details-page,.question-page,.badges-page,.assessment-page,.child-profile-page,.link-parent-page{padding-inline-start:0!important;padding-top:0!important}
+}
+@media(max-width:690px){
+  .child-side-nav{grid-template-columns:auto;gap:8px;padding:9px}.child-side-brand span{display:none}.child-side-brand img{width:40px;height:40px}.child-side-nav nav{grid-column:1/-1;justify-content:flex-start}.child-side-link{padding:9px 10px}.child-topbar{padding:8px 9px;gap:8px}.child-topbar-greeting small,.child-points-chip,.child-user-chip>span{display:none}.child-topbar-greeting strong{font-size:10px}.child-topbar-actions{gap:5px}
+}

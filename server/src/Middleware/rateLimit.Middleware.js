@@ -93,3 +93,55 @@ export const parentLinkAttemptLimiter = rateLimit({
       "Too many link code attempts. Please try again after 10 minutes.",
   },
 });
+
+const createPasswordRecoveryLimiter = () =>
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message:
+        "Too many password recovery requests. Please try again after 15 minutes.",
+    },
+  });
+
+export const parentForgotPasswordLimiter =
+  createPasswordRecoveryLimiter();
+
+export const parentResetPasswordLimiter =
+  createPasswordRecoveryLimiter();
+
+export const adminForgotPasswordLimiter =
+  createPasswordRecoveryLimiter();
+
+export const adminResetPasswordLimiter =
+  createPasswordRecoveryLimiter();
+
+export const parentEmailVerificationAttemptLimiter =
+  rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: {
+      success: false,
+      message:
+        "Too many verification attempts. Please try again after 10 minutes.",
+    },
+  });
+
+export const parentEmailVerificationResendLimiter =
+  rateLimit({
+    windowMs: 10 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message:
+        "Too many verification code requests. Please try again after 10 minutes.",
+    },
+  });

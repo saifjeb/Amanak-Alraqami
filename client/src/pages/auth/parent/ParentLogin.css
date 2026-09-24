@@ -1,0 +1,31 @@
+/* Parent login uses the shared AuthPortal design system. */
+/* Parent registration uses the shared AuthPortal design system. */
+.auth-resend {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: #7a8298;
+}
+
+.auth-resend-button {
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  color: #0866d9;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-resend-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.auth-resend-button:disabled {
+  cursor: not-allowed;
+  color: #8f98a8;
+}
