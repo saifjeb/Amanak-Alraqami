@@ -5,13 +5,18 @@ import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import AuthPortal from "../../../components/auth/AuthPortal.jsx";
+
 import { useAuth } from "../../../hooks/useAuth.js";
+
 import { useLanguage } from "../../../i18n/useLanguage.js";
+
 import familyImage from "../../../assets/family-digital-safety.webp";
+
 import "./ParentLogin.css";
 
 function ParentLogin() {
   const navigate = useNavigate();
+
   const location = useLocation();
 
   const { user, role, loading, parentLogin } = useAuth();
@@ -48,17 +53,17 @@ function ParentLogin() {
     return <Navigate to="/parent/dashboard" replace />;
   }
 
-  function handleChange(e) {
+  function handleChange(event) {
     setForm((previous) => ({
       ...previous,
-      [e.target.name]: e.target.value,
+      [event.target.name]: event.target.value,
     }));
 
     setError("");
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
 
     const email = form.email.trim().toLowerCase();
 
@@ -80,12 +85,26 @@ function ParentLogin() {
       setSubmitting(true);
       setError("");
 
-      await parentLogin({
+      const data = await parentLogin({
         email,
         password: form.password,
       });
 
       const from = location.state?.from;
+
+      if (data?.requiresTwoFactor) {
+        navigate("/parent/2fa", {
+          replace: true,
+          state: {
+            from:
+              typeof from === "string" && from.startsWith("/parent/")
+                ? from
+                : "/parent/dashboard",
+          },
+        });
+
+        return;
+      }
 
       navigate(
         typeof from === "string" && from.startsWith("/parent/")
@@ -118,7 +137,11 @@ function ParentLogin() {
             "Too many login attempts. Please try later.",
           ),
         );
-      } else if (status === 400 || status === 401) {
+
+        return;
+      }
+
+      if (status === 400 || status === 401) {
         setError(
           responseData?.message ||
             pick(
@@ -126,7 +149,11 @@ function ParentLogin() {
               "Email or password is incorrect.",
             ),
         );
-      } else if (status === 403) {
+
+        return;
+      }
+
+      if (status === 403) {
         setError(
           responseData?.message ||
             pick(
@@ -134,17 +161,18 @@ function ParentLogin() {
               "This account cannot sign in.",
             ),
         );
-      } else {
-        setError(
-          !err.response
-            ? pick(
-                "لا يمكن الاتصال بأمانك الآن.",
-                "Cannot connect to Amanak right now.",
-              )
-            : responseData?.message ||
-                pick("فشل تسجيل الدخول.", "Login failed."),
-        );
+
+        return;
       }
+
+      setError(
+        !err.response
+          ? pick(
+              "لا يمكن الاتصال بأمانك الآن.",
+              "Cannot connect to Amanak right now.",
+            )
+          : responseData?.message || pick("فشل تسجيل الدخول.", "Login failed."),
+      );
     } finally {
       setSubmitting(false);
     }

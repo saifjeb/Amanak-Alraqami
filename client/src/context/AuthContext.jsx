@@ -6,11 +6,14 @@ import { AuthContext } from "./AuthContextValue.js";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+
   const [role, setRole] = useState(null);
+
   const [loading, setLoading] = useState(true);
 
   const setSession = (account, accountRole) => {
     setUser(account);
+
     setRole(accountRole);
 
     sessionStorage.setItem("amanak_last_role", accountRole);
@@ -18,6 +21,7 @@ export function AuthProvider({ children }) {
 
   const clearSession = () => {
     setUser(null);
+
     setRole(null);
 
     sessionStorage.removeItem("amanak_last_role");
@@ -42,6 +46,28 @@ export function AuthProvider({ children }) {
   const parentLogin = async (credentials) => {
     const response = await api.post("/parent/login", credentials);
 
+    if (response.data?.requiresTwoFactor) {
+      clearSession();
+
+      return response.data;
+    }
+
+    if (!response.data?.parent) {
+      throw new Error("Invalid parent login response");
+    }
+
+    setSession(response.data.parent, "parent");
+
+    return response.data;
+  };
+
+  const parentVerifyTwoFactor = async (payload) => {
+    const response = await api.post("/parent/2fa/challenge", payload);
+
+    if (!response.data?.parent) {
+      throw new Error("Invalid parent two-factor authentication response");
+    }
+
     setSession(response.data.parent, "parent");
 
     return response.data;
@@ -61,6 +87,28 @@ export function AuthProvider({ children }) {
 
   const adminLogin = async (credentials) => {
     const response = await api.post("/admin/login", credentials);
+
+    if (response.data?.requiresTwoFactor) {
+      clearSession();
+
+      return response.data;
+    }
+
+    if (!response.data?.admin) {
+      throw new Error("Invalid admin login response");
+    }
+
+    setSession(response.data.admin, "admin");
+
+    return response.data;
+  };
+
+  const adminVerifyTwoFactor = async (payload) => {
+    const response = await api.post("/admin/2fa/challenge", payload);
+
+    if (!response.data?.admin) {
+      throw new Error("Invalid two-factor authentication response");
+    }
 
     setSession(response.data.admin, "admin");
 
@@ -146,10 +194,12 @@ export function AuthProvider({ children }) {
     childLogout,
 
     parentLogin,
+    parentVerifyTwoFactor,
     parentRegister,
     parentLogout,
 
     adminLogin,
+    adminVerifyTwoFactor,
     adminLogout,
 
     clearSession,

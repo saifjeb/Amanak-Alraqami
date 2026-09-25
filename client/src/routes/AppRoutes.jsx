@@ -6,11 +6,14 @@ import ChildLogin from "../pages/auth/child/ChildLogin.jsx";
 import ChildRegister from "../pages/auth/child/ChildRegister.jsx";
 
 import ParentLogin from "../pages/auth/parent/ParentLogin.jsx";
+import ParentTwoFactor from "../pages/auth/parent/ParentTwoFactor.jsx";
 import ParentRegister from "../pages/auth/parent/ParentRegister.jsx";
 import ParentForgotPassword from "../pages/auth/parent/ParentForgotPassword.jsx";
 import ParentResetPassword from "../pages/auth/parent/ParentResetPassword.jsx";
+import ParentVerifyEmail from "../pages/auth/parent/ParentVerifyEmail.jsx";
 
 import AdminLogin from "../pages/auth/admin/AdminLogin.jsx";
+import AdminTwoFactor from "../pages/auth/admin/AdminTwoFactor.jsx";
 import AdminForgotPassword from "../pages/auth/admin/AdminForgotPassword.jsx";
 import AdminResetPassword from "../pages/auth/admin/AdminResetPassword.jsx";
 
@@ -25,6 +28,7 @@ import LinkParent from "../pages/child/LinkParent.jsx";
 
 import ParentDashboard from "../pages/parent/ParentDashboard.jsx";
 import ChildProgress from "../pages/parent/ChildProgress.jsx";
+import ParentSecurity from "../pages/parent/ParentSecurity.jsx";
 
 import AdminDashboard from "../pages/admin/AdminDashboard.jsx";
 import Students from "../pages/admin/Students.jsx";
@@ -37,7 +41,7 @@ import AdminSecurity from "../pages/admin/AdminSecurity.jsx";
 import AdminSettings from "../pages/admin/AdminSettings.jsx";
 
 import ProtectedRoute from "../components/common/ProtectedRoute.jsx";
-import ParentVerifyEmail from "../pages/auth/parent/ParentVerifyEmail.jsx";
+
 import NotFound from "../pages/NotFound.jsx";
 
 function AppRoutes() {
@@ -45,27 +49,51 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
 
+      {/* Child authentication */}
       <Route path="/child/login" element={<ChildLogin />} />
+
       <Route path="/child/register" element={<ChildRegister />} />
 
+      {/* Parent authentication */}
       <Route path="/parent/login" element={<ParentLogin />} />
+
+      <Route path="/parent/2fa" element={<ParentTwoFactor />} />
+
       <Route path="/parent/register" element={<ParentRegister />} />
+
       <Route path="/parent/verify-email" element={<ParentVerifyEmail />} />
+
       <Route
         path="/parent/forgot-password"
         element={<ParentForgotPassword />}
       />
+
       <Route path="/parent/reset-password" element={<ParentResetPassword />} />
 
+      {/* Admin authentication */}
       <Route path="/admin/login" element={<AdminLogin />} />
+
+      <Route path="/admin/2fa" element={<AdminTwoFactor />} />
+
       <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+
       <Route path="/admin/reset-password" element={<AdminResetPassword />} />
 
+      {/* Parent protected routes */}
       <Route
         path="/parent/dashboard"
         element={
           <ProtectedRoute allowedRole="parent">
             <ParentDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/parent/security"
+        element={
+          <ProtectedRoute allowedRole="parent">
+            <ParentSecurity />
           </ProtectedRoute>
         }
       />
@@ -79,6 +107,7 @@ function AppRoutes() {
         }
       />
 
+      {/* Admin protected routes */}
       <Route
         path="/admin/dashboard"
         element={
@@ -160,6 +189,7 @@ function AppRoutes() {
         }
       />
 
+      {/* Child protected routes */}
       <Route
         path="/child/dashboard"
         element={

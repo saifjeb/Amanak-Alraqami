@@ -14,6 +14,7 @@ const cookieOptions = {
   sameSite: "lax",
   path: "/",
 };
+
 function publicUser(user) {
   return {
     id: user.id,
@@ -61,6 +62,7 @@ export async function registerController(req, res, next) {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setAuthCookies(res, accessToken, refreshToken);
+
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
@@ -88,6 +90,7 @@ export async function loginController(req, res, next) {
         message: "Invalid credentials",
       });
     }
+
     const passwordMatch = await bcrypt.compare(password, user.hashed_password);
     if (!passwordMatch) {
       return res.status(401).json({
@@ -98,6 +101,7 @@ export async function loginController(req, res, next) {
 
     if (user.is_enabled === false) {
       clearAuthCookies(res);
+
       return res.status(403).json({
         success: false,
         message: "Account is disabled",
@@ -105,6 +109,7 @@ export async function loginController(req, res, next) {
     }
 
     const activeUser = await updateUserLoginActivity(user.id);
+
     if (!activeUser) {
       clearAuthCookies(res);
       return res.status(403).json({
@@ -128,25 +133,39 @@ export async function loginController(req, res, next) {
 
 export async function refreshTokenController(req, res, next) {
   const refreshToken = req.cookies.refreshToken;
+
   if (!refreshToken) {
     return res.status(401).json({
       success: false,
       message: "Refresh token missing",
     });
   }
+
   let decoded;
+
   try {
     decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
   } catch {
     clearAuthCookies(res);
+
     return res.status(401).json({
       success: false,
       message: "Invalid or expired refresh token",
     });
   }
 
+  if (decoded.type !== "child" || !decoded.id) {
+    clearAuthCookies(res);
+
+    return res.status(403).json({
+      success: false,
+      message: "Child access required",
+    });
+  }
+
   try {
     const user = await getUserById(decoded.id);
+
     if (!user) {
       clearAuthCookies(res);
       return res.status(401).json({
@@ -157,6 +176,7 @@ export async function refreshTokenController(req, res, next) {
 
     if (user.is_enabled === false) {
       clearAuthCookies(res);
+
       return res.status(403).json({
         success: false,
         message: "Account is disabled",
@@ -164,10 +184,12 @@ export async function refreshTokenController(req, res, next) {
     }
 
     const newAccessToken = generateAccessToken(user);
+
     res.cookie("accessToken", newAccessToken, {
       ...cookieOptions,
       maxAge: ACCESS_TOKEN_MAX_AGE,
     });
+
     return res.status(200).json({
       success: true,
       message: "Access token refreshed successfully",
@@ -187,12 +209,15 @@ export async function meController(req, res, next) {
     }
 
     const user = await getUserById(req.user.id);
+
     if (!user) {
+      clearAuthCookies(res);
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
+
     if (user.is_enabled === false) {
       clearAuthCookies(res);
       return res.status(403).json({

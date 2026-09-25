@@ -1,43 +1,93 @@
 import { useState } from "react";
-import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+
+import {
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+} from "lucide-react";
+
+import {
+  Link,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
+
 import AuthPortal from "../../../components/auth/AuthPortal.jsx";
+
 import { useAuth } from "../../../hooks/useAuth.js";
+
 import { useLanguage } from "../../../i18n/useLanguage.js";
+
 import heroesImage from "../../../assets/amanak-heroes.webp";
+
 import "./AdminLogin.css";
 
 function AdminLogin() {
-  const navigate = useNavigate();
-  const { user, role, loading, adminLogin } = useAuth();
-  const { pick } = useLanguage();
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const navigate =
+    useNavigate();
+
+  const {
+    user,
+    role,
+    loading,
+    adminLogin,
+  } = useAuth();
+
+  const { pick } =
+    useLanguage();
+
+  const [form, setForm] =
+    useState({
+      email: "",
+      password: "",
+    });
+
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
+
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+
+  const [error, setError] =
+    useState("");
 
   if (loading) {
     return (
       <main className="auth-loading">
         <div className="auth-loading-spinner" />
+
         <p>
-          {pick("جارٍ التحقق من جلسة الإدارة...", "Checking admin session...")}
+          {pick(
+            "جارٍ التحقق من جلسة الإدارة...",
+            "Checking admin session..."
+          )}
         </p>
       </main>
     );
   }
 
-  if (user && role === "admin") {
-    return <Navigate to="/admin/dashboard" replace />;
+  if (
+    user &&
+    role === "admin"
+  ) {
+    return (
+      <Navigate
+        to="/admin/dashboard"
+        replace
+      />
+    );
   }
 
   function handleChange(e) {
     setForm((previous) => ({
       ...previous,
-      [e.target.name]: e.target.value,
+      [e.target.name]:
+        e.target.value,
     }));
 
     setError("");
@@ -46,20 +96,28 @@ function AdminLogin() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    const email = form.email.trim().toLowerCase();
+    const email =
+      form.email
+        .trim()
+        .toLowerCase();
 
     if (!email) {
       return setError(
-        pick("أدخل بريد المشرف.", "Please enter your admin email."),
+        pick(
+          "أدخل بريد المشرف.",
+          "Please enter your admin email."
+        )
       );
     }
 
-    if (form.password.length < 8) {
+    if (
+      form.password.length < 8
+    ) {
       return setError(
         pick(
           "كلمة المرور يجب أن تكون 8 أحرف على الأقل.",
-          "Password must be at least 8 characters.",
-        ),
+          "Password must be at least 8 characters."
+        )
       );
     }
 
@@ -67,48 +125,79 @@ function AdminLogin() {
       setSubmitting(true);
       setError("");
 
-      await adminLogin({
-        email,
-        password: form.password,
-      });
+      const data =
+        await adminLogin({
+          email,
+          password:
+            form.password,
+        });
 
-      navigate("/admin/dashboard", {
-        replace: true,
-      });
+      if (
+        data
+          ?.requiresTwoFactor
+      ) {
+        navigate(
+          "/admin/2fa",
+          {
+            replace: true,
+          }
+        );
+
+        return;
+      }
+
+      navigate(
+        "/admin/dashboard",
+        {
+          replace: true,
+        }
+      );
     } catch (err) {
-      const status = err.response?.status;
+      const status =
+        err.response?.status;
 
       if (status === 429) {
         setError(
           pick(
             "محاولات كثيرة جداً. حاول لاحقاً.",
-            "Too many login attempts. Try later.",
-          ),
+            "Too many login attempts. Try later."
+          )
         );
-      } else if (status === 400 || status === 401) {
+      } else if (
+        status === 400 ||
+        status === 401
+      ) {
         setError(
-          err.response?.data?.message ||
+          err.response?.data
+            ?.message ||
             pick(
               "بيانات الدخول غير صحيحة.",
-              "Invalid admin email or password.",
-            ),
+              "Invalid admin email or password."
+            )
         );
-      } else if (status === 403) {
+      } else if (
+        status === 403
+      ) {
         setError(
           pick(
             "غير مصرح لك بالدخول إلى الإدارة.",
-            "You are not authorized to access the admin area.",
-          ),
+            "You are not authorized to access the admin area."
+          )
         );
       } else {
         setError(
           !err.response
             ? pick(
                 "لا يمكن الاتصال بخادم أمانك.",
-                "Cannot connect to Amanak server.",
+                "Cannot connect to Amanak server."
               )
-            : err.response?.data?.message ||
-                pick("فشل دخول الإدارة.", "Admin login failed."),
+            : err.response
+                ?.data
+                ?.message ||
+                pick(
+                  "فشل دخول الإدارة.",
+                  "Admin login failed."
+                )
         );
       }
     } finally {
@@ -119,30 +208,61 @@ function AdminLogin() {
   return (
     <AuthPortal
       tone="admin"
-      eyebrow={pick("الإدارة", "ADMINISTRATION")}
-      title={pick("مركز تحكم أمانك الرقمي.", "Amanak Control Center.")}
+      eyebrow={pick(
+        "الإدارة",
+        "ADMINISTRATION"
+      )}
+      title={pick(
+        "مركز تحكم أمانك الرقمي.",
+        "Amanak Control Center."
+      )}
       subtitle={pick(
         "إدارة آمنة للطلبة والمغامرات والأسئلة والوسائط والتقارير من مكان واحد.",
-        "Securely manage students, adventures, questions, media and reporting from one place.",
+        "Securely manage students, adventures, questions, media and reporting from one place."
       )}
       image={heroesImage}
-      imageAlt={pick("أبطال أمانك الرقمي", "Amanak digital safety heroes")}
+      imageAlt={pick(
+        "أبطال أمانك الرقمي",
+        "Amanak digital safety heroes"
+      )}
       features={[
-        pick("👥 إدارة الطلبة", "👥 Student management"),
-        pick("🧭 إدارة المحتوى", "🧭 Content management"),
-        pick("📊 متابعة الأثر", "📊 Learning impact"),
+        pick(
+          "👥 إدارة الطلبة",
+          "👥 Student management"
+        ),
+        pick(
+          "🧭 إدارة المحتوى",
+          "🧭 Content management"
+        ),
+        pick(
+          "📊 متابعة الأثر",
+          "📊 Learning impact"
+        ),
       ]}
-      panelEyebrow={pick("دخول آمن", "SECURE ACCESS")}
-      panelTitle={pick("تسجيل دخول الإدارة", "Admin Login")}
+      panelEyebrow={pick(
+        "دخول آمن",
+        "SECURE ACCESS"
+      )}
+      panelTitle={pick(
+        "تسجيل دخول الإدارة",
+        "Admin Login"
+      )}
       panelSubtitle={pick(
         "هذه المساحة مخصصة للمشرفين المخولين فقط.",
-        "Authorized administrators only.",
+        "Authorized administrators only."
       )}
     >
-      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+      <form
+        className="auth-form"
+        onSubmit={handleSubmit}
+        noValidate
+      >
         <div className="auth-field">
           <label htmlFor="admin-email">
-            {pick("بريد المشرف", "Admin email")}
+            {pick(
+              "بريد المشرف",
+              "Admin email"
+            )}
           </label>
 
           <div className="auth-input-wrap has-leading">
@@ -153,7 +273,9 @@ function AdminLogin() {
               name="email"
               type="email"
               value={form.email}
-              onChange={handleChange}
+              onChange={
+                handleChange
+              }
               autoComplete="email"
               placeholder="admin@example.com"
             />
@@ -162,48 +284,98 @@ function AdminLogin() {
 
         <div className="auth-field">
           <label htmlFor="admin-password">
-            {pick("كلمة المرور", "Password")}
+            {pick(
+              "كلمة المرور",
+              "Password"
+            )}
           </label>
 
           <div className="auth-input-wrap has-leading">
-            <LockKeyhole size={18} />
+            <LockKeyhole
+              size={18}
+            />
 
             <input
               id="admin-password"
               name="password"
-              type={showPassword ? "text" : "password"}
-              value={form.password}
-              onChange={handleChange}
+              type={
+                showPassword
+                  ? "text"
+                  : "password"
+              }
+              value={
+                form.password
+              }
+              onChange={
+                handleChange
+              }
               autoComplete="current-password"
-              placeholder={pick("كلمة المرور", "Password")}
+              placeholder={pick(
+                "كلمة المرور",
+                "Password"
+              )}
             />
 
             <button
               type="button"
               className="auth-password-toggle"
-              onClick={() => setShowPassword((value) => !value)}
+              onClick={() =>
+                setShowPassword(
+                  (value) =>
+                    !value
+                )
+              }
               aria-label={pick(
-                showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور",
-                showPassword ? "Hide password" : "Show password",
+                showPassword
+                  ? "إخفاء كلمة المرور"
+                  : "إظهار كلمة المرور",
+                showPassword
+                  ? "Hide password"
+                  : "Show password"
               )}
             >
-              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              {showPassword ? (
+                <EyeOff
+                  size={17}
+                />
+              ) : (
+                <Eye
+                  size={17}
+                />
+              )}
             </button>
           </div>
         </div>
 
         <div className="auth-forgot-password">
           <Link to="/admin/forgot-password">
-            {pick("نسيت كلمة المرور؟", "Forgot password?")}
+            {pick(
+              "نسيت كلمة المرور؟",
+              "Forgot password?"
+            )}
           </Link>
         </div>
 
-        {error && <div className="auth-error">⚠️ {error}</div>}
+        {error && (
+          <div className="auth-error">
+            ⚠️ {error}
+          </div>
+        )}
 
-        <button className="auth-submit" type="submit" disabled={submitting}>
+        <button
+          className="auth-submit"
+          type="submit"
+          disabled={submitting}
+        >
           {submitting
-            ? pick("جارٍ تسجيل الدخول...", "Signing in...")
-            : pick("دخول لوحة الإدارة", "Enter Admin Dashboard")}
+            ? pick(
+                "جارٍ تسجيل الدخول...",
+                "Signing in..."
+              )
+            : pick(
+                "دخول لوحة الإدارة",
+                "Enter Admin Dashboard"
+              )}
         </button>
       </form>
 
@@ -211,7 +383,7 @@ function AdminLogin() {
         🔐{" "}
         {pick(
           "جلسة إدارة محمية. لا تشارك بيانات الدخول مع أي شخص.",
-          "Protected administrator session. Never share admin credentials.",
+          "Protected administrator session. Never share admin credentials."
         )}
       </div>
     </AuthPortal>

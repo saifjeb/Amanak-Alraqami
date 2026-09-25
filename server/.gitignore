@@ -1,7 +1,36 @@
+# Dependencies
 node_modules/
-server/node_modules/uploads/
+server/node_modules/
 client/node_modules/
 
+# Environment files
 .env
-server/.env
+.env.*
+!.env.example
 
+server/.env
+server/.env.*
+!server/.env.example
+
+client/.env
+client/.env.*
+!client/.env.example
+
+# Uploaded media
+server/uploads/
+
+# Build output
+client/dist/
+server/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

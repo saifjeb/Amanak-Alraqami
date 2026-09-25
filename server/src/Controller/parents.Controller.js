@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+
 import {
   registerParent,
   getParentByEmail,
@@ -8,11 +9,24 @@ import {
   saveParentRefreshToken,
   clearParentRefreshToken,
 } from "../Model/parents.Models.js";
+
 import {
   generateParentAccessToken,
   generateParentRefreshToken,
   hashToken,
 } from "../Utils/Tokens.Utils.js";
+
+import {
+  getTwoFactorSettings,
+  consumeTwoFactorTimeStep,
+  useTwoFactorRecoveryCode,
+} from "../Model/twoFactor.Model.js";
+
+import {
+  verifyTwoFactorToken,
+  hashTwoFactorRecoveryCode,
+} from "../Utils/twoFactor.Utils.js";
+
 import { createAndSendParentVerificationCode } from "../Utils/parentEmailVerification.Utils.js";
 
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
@@ -51,6 +65,37 @@ async function issueParentTokens(res, parent) {
     ...cookieOptions,
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
+}
+
+function createParentTwoFactorChallengeToken(parent) {
+  return jwt.sign(
+    {
+      id: parent.id,
+      email: parent.email,
+      type: "parent_2fa_challenge",
+    },
+    process.env.PARENT_REFRESH_SECRET,
+    {
+      expiresIn: "5m",
+    },
+  );
+}
+
+function setParentTwoFactorChallengeCookie(res, token) {
+  res.cookie("parentTwoFactorChallenge", token, {
+    ...cookieOptions,
+    maxAge: 5 * 60 * 1000,
+  });
+}
+
+function clearParentTwoFactorChallenge(res) {
+  res.clearCookie("parentTwoFactorChallenge", cookieOptions);
+}
+
+function clearParentAuthCookies(res) {
+  res.clearCookie("parentAccessToken", cookieOptions);
+
+  res.clearCookie("parentRefreshToken", cookieOptions);
 }
 
 export async function parentRegisterController(req, res) {
@@ -123,15 +168,196 @@ export async function parentLoginController(req, res) {
       });
     }
 
+    const twoFactorSettings = await getTwoFactorSettings("parent", parent.id);
+
+    if (twoFactorSettings?.two_factor_enabled) {
+      clearParentAuthCookies(res);
+
+      const challengeToken = createParentTwoFactorChallengeToken(parent);
+
+      setParentTwoFactorChallengeCookie(res, challengeToken);
+
+      return res.status(200).json({
+        success: true,
+        requiresTwoFactor: true,
+        message: "Authenticator verification required.",
+      });
+    }
+
+    clearParentTwoFactorChallenge(res);
+
     await issueParentTokens(res, parent);
 
     return res.status(200).json({
       success: true,
+      requiresTwoFactor: false,
       message: "Login successful",
       parent: publicParent(parent),
     });
   } catch (error) {
     console.error("Parent login error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+}
+
+export async function parentTwoFactorChallengeController(req, res) {
+  try {
+    const challengeToken = req.cookies?.parentTwoFactorChallenge;
+
+    if (!challengeToken) {
+      return res.status(401).json({
+        success: false,
+        code: "TWO_FACTOR_CHALLENGE_REQUIRED",
+        message: "Two-factor authentication challenge is missing or expired.",
+      });
+    }
+
+    let decoded;
+
+    try {
+      decoded = jwt.verify(challengeToken, process.env.PARENT_REFRESH_SECRET);
+    } catch {
+      clearParentTwoFactorChallenge(res);
+
+      return res.status(401).json({
+        success: false,
+        code: "TWO_FACTOR_CHALLENGE_EXPIRED",
+        message: "Two-factor authentication challenge is invalid or expired.",
+      });
+    }
+
+    if (decoded.type !== "parent_2fa_challenge" || !decoded.id) {
+      clearParentTwoFactorChallenge(res);
+
+      return res.status(401).json({
+        success: false,
+        message: "Invalid two-factor authentication challenge.",
+      });
+    }
+
+    const parent = await getParentByIdForAuth(decoded.id);
+
+    if (!parent) {
+      clearParentTwoFactorChallenge(res);
+
+      return res.status(401).json({
+        success: false,
+        message: "Parent account not found.",
+      });
+    }
+
+    if (!parent.email_verified_at) {
+      clearParentTwoFactorChallenge(res);
+
+      return res.status(403).json({
+        success: false,
+        requiresEmailVerification: true,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Please verify your email before signing in.",
+      });
+    }
+
+    const settings = await getTwoFactorSettings("parent", parent.id);
+
+    if (
+      !settings ||
+      !settings.two_factor_enabled ||
+      !settings.two_factor_secret_encrypted
+    ) {
+      clearParentTwoFactorChallenge(res);
+
+      return res.status(400).json({
+        success: false,
+        code: "TWO_FACTOR_NOT_ENABLED",
+        message: "Two-step verification is not enabled.",
+      });
+    }
+
+    const token =
+      typeof req.body?.token === "string" ? req.body.token.trim() : "";
+
+    const recoveryCode =
+      typeof req.body?.recoveryCode === "string"
+        ? req.body.recoveryCode.trim()
+        : "";
+
+    if (Boolean(token) === Boolean(recoveryCode)) {
+      return res.status(400).json({
+        success: false,
+        message: "Provide either an authenticator code or a recovery code.",
+      });
+    }
+
+    let secondFactorValid = false;
+
+    if (token) {
+      if (!/^\d{6}$/.test(token)) {
+        return res.status(400).json({
+          success: false,
+          message: "Authenticator code must contain exactly 6 digits.",
+        });
+      }
+
+      const verification = await verifyTwoFactorToken({
+        encryptedSecret: settings.two_factor_secret_encrypted,
+        token,
+        lastUsedTimeStep: settings.two_factor_last_used_step,
+      });
+
+      if (verification.valid) {
+        const consumed = await consumeTwoFactorTimeStep({
+          accountType: "parent",
+          accountId: parent.id,
+          timeStep: verification.timeStep,
+        });
+
+        if (consumed) {
+          secondFactorValid = true;
+        }
+      }
+    }
+
+    if (recoveryCode) {
+      const codeHash = hashTwoFactorRecoveryCode({
+        accountType: "parent",
+        accountId: parent.id,
+        code: recoveryCode,
+      });
+
+      const consumed = await useTwoFactorRecoveryCode({
+        accountType: "parent",
+        accountId: parent.id,
+        codeHash,
+      });
+
+      if (consumed) {
+        secondFactorValid = true;
+      }
+    }
+
+    if (!secondFactorValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or already used authentication code.",
+      });
+    }
+
+    await issueParentTokens(res, parent);
+
+    clearParentTwoFactorChallenge(res);
+
+    return res.status(200).json({
+      success: true,
+      requiresTwoFactor: false,
+      message: "Login successful",
+      parent: publicParent(parent),
+    });
+  } catch (error) {
+    console.error("Parent 2FA challenge error:", error);
 
     return res.status(500).json({
       success: false,
@@ -158,9 +384,9 @@ export async function parentLogoutController(req, res) {
     console.error("Parent logout error:", error);
   }
 
-  res.clearCookie("parentAccessToken", cookieOptions);
+  clearParentAuthCookies(res);
 
-  res.clearCookie("parentRefreshToken", cookieOptions);
+  clearParentTwoFactorChallenge(res);
 
   return res.status(200).json({
     success: true,
@@ -182,9 +408,7 @@ export async function parentMeController(req, res) {
     if (!parent.email_verified_at) {
       await clearParentRefreshToken(parent.id);
 
-      res.clearCookie("parentAccessToken", cookieOptions);
-
-      res.clearCookie("parentRefreshToken", cookieOptions);
+      clearParentAuthCookies(res);
 
       return res.status(403).json({
         success: false,
@@ -240,9 +464,7 @@ export async function parentRefreshController(req, res) {
     if (!parent.email_verified_at) {
       await clearParentRefreshToken(parent.id);
 
-      res.clearCookie("parentAccessToken", cookieOptions);
-
-      res.clearCookie("parentRefreshToken", cookieOptions);
+      clearParentAuthCookies(res);
 
       return res.status(403).json({
         success: false,

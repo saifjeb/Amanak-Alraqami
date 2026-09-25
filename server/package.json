@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-   "scripts": {
-    "start": "nodemon index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "node --env-file=.env.test --test --test-concurrency=1",
     "test:watch": "node --env-file=.env.test --test --test-concurrency=1 --watch"
-},
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -25,7 +26,9 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
     "nodemailer": "^10.0.10",
-    "pg": "^8.23.0"
+    "otplib": "^13.5.0",
+    "pg": "^8.23.0",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",

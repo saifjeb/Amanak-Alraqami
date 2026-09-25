@@ -16,7 +16,6 @@ const clearAuthCookies = (res) => {
 
 export const protect = async (req, res, next) => {
   const accessToken = req.cookies.accessToken;
-
   if (!accessToken) {
     return res.status(401).json({
       success: false,
@@ -29,17 +28,29 @@ export const protect = async (req, res, next) => {
   try {
     decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
   } catch (error) {
+    clearAuthCookies(res);
     return res.status(401).json({
       success: false,
       message: "Invalid or expired access token",
     });
   }
 
+  if (decoded.type !== "child" || !decoded.id) {
+    clearAuthCookies(res);
+
+    return res.status(403).json({
+      success: false,
+      message: "Child access required",
+    });
+  }
+
   try {
     const user = await updateUserLastActive(decoded.id);
+
     if (!user) {
       const existingUser = await getUserById(decoded.id);
       clearAuthCookies(res);
+
       if (existingUser && existingUser.is_enabled === false) {
         return res.status(403).json({
           success: false,
@@ -66,7 +77,7 @@ export const protect = async (req, res, next) => {
       is_enabled: user.is_enabled,
     };
 
-    next();
+    return next();
   } catch (error) {
     console.error("Protect middleware error:", error);
 
