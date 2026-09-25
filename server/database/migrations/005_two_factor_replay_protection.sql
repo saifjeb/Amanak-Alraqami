@@ -1,5 +1,11 @@
+BEGIN;
+
 ALTER TABLE parents
-ADD COLUMN IF NOT EXISTS two_factor_last_used_step BIGINT DEFAULT NULL;
+ADD COLUMN IF NOT EXISTS
+two_factor_last_used_step BIGINT DEFAULT NULL;
 
 ALTER TABLE admins
-ADD COLUMN IF NOT EXISTS two_factor_last_used_step BIGINT DEFAULT NULL;
+ADD COLUMN IF NOT EXISTS
+two_factor_last_used_step BIGINT DEFAULT NULL;
+
+COMMIT;
