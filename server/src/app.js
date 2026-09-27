@@ -4,6 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import multer from "multer";
+
 import authRoutes from "./Routes/auth.Routes.js";
 import parentRoutes from "./Routes/parents.Routes.js";
 import userRoutes from "./Routes/user.Routes.js";
@@ -17,14 +18,46 @@ import mediaRoutes from "./Routes/media.Routes.js";
 
 const app = express();
 const isTest = process.env.NODE_ENV === "test";
+const isProd = process.env.NODE_ENV === "production";
+const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+let clientOrigin;
+
+try {
+  clientOrigin = new URL(clientUrl).origin;
+} catch {
+  throw new Error("CLIENT_URL must be a valid URL");
+}
+
+if (isProd) {
+  app.set("trust proxy", 1);
+}
 
 app.use(helmet());
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: clientOrigin,
     credentials: true,
   }),
 );
+
+const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+app.use((req, res, next) => {
+  if (!isProd || isTest || !unsafeMethods.has(req.method)) {
+    return next();
+  }
+
+  const requestOrigin = req.get("origin");
+
+  if (!requestOrigin || requestOrigin !== clientOrigin) {
+    return res.status(403).json({
+      success: false,
+      message: "Invalid request origin",
+    });
+  }
+
+  return next();
+});
 
 app.use(
   express.json({
