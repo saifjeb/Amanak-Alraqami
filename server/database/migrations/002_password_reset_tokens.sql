@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id BIGSERIAL PRIMARY KEY,
 
@@ -22,4 +24,6 @@ CREATE INDEX IF NOT EXISTS idx_password_reset_token_hash
 ON password_reset_tokens (token_hash);
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_expires_at
-ON password_reset_tokens (expires_at);psql -U postgres -d amanak_alraqami -f database/migrations/002_password_reset_tokens.sql
+ON password_reset_tokens (expires_at);
+
+COMMIT;

@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE parents
 ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ DEFAULT NULL;
 
@@ -22,3 +24,5 @@ ON parent_email_verification_codes(parent_id);
 
 CREATE INDEX IF NOT EXISTS idx_parent_email_verification_expiry
 ON parent_email_verification_codes(expires_at);
+
+COMMIT;
