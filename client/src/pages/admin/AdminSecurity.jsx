@@ -282,6 +282,8 @@ function AdminSecurity() {
             className="admin-page-refresh"
             onClick={handleRefresh}
             disabled={refreshing}
+            aria-busy={refreshing}
+            aria-label={refreshing ? "Refreshing security data" : "Refresh security data"}
           >
             <RefreshCw
               size={18}
@@ -668,9 +670,11 @@ function AdminSecurity() {
               <button
                 key={value}
                 type="button"
-                className="admin-page-refresh"
+                className={`security-filter-button ${
+                  eventFilter === value ? "active" : ""
+                }`}
                 onClick={() => setEventFilter(value)}
-                disabled={eventFilter === value}
+                aria-pressed={eventFilter === value}
               >
                 {label}
               </button>

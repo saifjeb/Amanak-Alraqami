@@ -253,6 +253,12 @@ function AdminAnalytics() {
               })
             }
             disabled={refreshing}
+            aria-busy={refreshing}
+            aria-label={
+              refreshing
+                ? pick("جارٍ التحديث...", "Refreshing analytics")
+                : pick("تحديث التحليلات", "Refresh analytics")
+            }
           >
             <RefreshCw
               size={18}

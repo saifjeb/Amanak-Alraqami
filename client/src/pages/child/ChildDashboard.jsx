@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Award, ShieldCheck, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, RefreshCw, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { api } from "../../api/api.js";
 import { useAuth } from "../../hooks/useAuth.js";
 import { useLanguage } from "../../i18n/useLanguage.js";
@@ -23,6 +23,40 @@ function getArray(data, keys = []) {
   return Array.isArray(data?.data) ? data.data : [];
 }
 
+async function fetchDashboardData() {
+  const requestConfig = {
+    params: { _ts: Date.now() },
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  };
+
+  const [
+    accountResponse,
+    adventuresResponse,
+    progressResponse,
+    badgesResponse,
+  ] = await Promise.all([
+    api.get("/auth/me", requestConfig),
+    api.get("/adventures", requestConfig),
+    api.get("/progress/me", requestConfig),
+    api.get("/badges/me", requestConfig),
+  ]);
+
+  return {
+    account: accountResponse.data?.user || null,
+    adventures: getArray(adventuresResponse.data, ["adventures"]),
+    progress: getArray(progressResponse.data, ["progress", "progresses"]),
+    badges: getArray(badgesResponse.data, [
+      "badges",
+      "earned_badges",
+      "user_badges",
+    ]),
+  };
+}
+
 function ChildDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -33,26 +67,81 @@ function ChildDashboard() {
   const [progress, setProgress] = useState([]);
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
-    Promise.all([api.get("/auth/me"), api.get("/adventures"), api.get("/progress/me"), api.get("/badges/me")])
-      .then(([accountResponse, adventuresResponse, progressResponse, badgesResponse]) => {
+
+    fetchDashboardData()
+      .then((data) => {
         if (!active) return;
-        setAccount(accountResponse.data?.user || user);
-        setAdventures(getArray(adventuresResponse.data, ["adventures"]));
-        setProgress(getArray(progressResponse.data, ["progress", "progresses"]));
-        setBadges(getArray(badgesResponse.data, ["badges", "earned_badges", "user_badges"]));
+
+        setAccount(data.account || user);
+        setAdventures(data.adventures);
+        setProgress(data.progress);
+        setBadges(data.badges);
+        setError("");
       })
       .catch((err) => {
         if (!active) return;
-        if (err.response?.status === 401) return navigate("/child/login", { replace: true });
-        setError(err.response?.data?.message || pick("تعذر تحديث لوحة التحكم.", "Could not refresh your dashboard."));
+
+        if (err.response?.status === 401) {
+          navigate("/child/login", { replace: true });
+          return;
+        }
+
+        setError(
+          err.response?.data?.message ||
+            pick(
+              "تعذر تحديث لوحة التحكم.",
+              "Could not refresh your dashboard.",
+            ),
+        );
       })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [navigate, user, pick]);
+
+  async function handleRefresh() {
+    if (refreshing) {
+      return;
+    }
+
+    try {
+      setRefreshing(true);
+      setError("");
+
+      const data = await fetchDashboardData();
+
+      setAccount(data.account || user);
+      setAdventures(data.adventures);
+      setProgress(data.progress);
+      setBadges(data.badges);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        navigate("/child/login", { replace: true });
+        return;
+      }
+
+      setError(
+        err.response?.data?.message ||
+          pick(
+            "تعذر تحديث لوحة التحكم.",
+            "Could not refresh your dashboard.",
+          ),
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const activeAdventures = useMemo(() => adventures.filter((adventure) => adventure.is_active !== false), [adventures]);
   const activeIds = useMemo(() => new Set(activeAdventures.map((adventure) => Number(adventure.id))), [activeAdventures]);
@@ -82,7 +171,25 @@ function ChildDashboard() {
           </div>
         </section>
 
-        {error && <div className="child-dashboard-error" role="alert">⚠️ {error}</div>}
+        {error && (
+          <div className="child-dashboard-error" role="alert">
+            <span>⚠️ {error}</span>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-busy={refreshing}
+            >
+              <RefreshCw
+                size={16}
+                className={refreshing ? "child-dashboard-refresh-spin" : ""}
+              />
+              {refreshing
+                ? pick("جارٍ التحديث...", "Refreshing...")
+                : pick("حاول مرة أخرى", "Try Again")}
+            </button>
+          </div>
+        )}
 
         <section className="child-dashboard-overview" aria-label="Your progress">
           <article><span className="dashboard-stat-icon">⭐</span><div><small>{pick("النقاط", "Points")}</small><strong>{Number(currentUser?.total_points) || 0}</strong><span>{pick("استمر في التقدم", "Keep building your score")}</span></div></article>

@@ -15,13 +15,49 @@ function ParentDashboard() {
   const [selected, setSelected] = useState(null);
   const [linkCode, setLinkCode] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [codeLoading, setCodeLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadChildren() {
-    try { setLoading(true); const response = await api.get("/parent/children"); setChildren(response.data?.children || []); }
-    catch (err) { if (err.response?.status === 401) navigate("/parent/login", { replace: true }); else setError(err.response?.data?.message || pick("تعذر تحميل الأطفال المرتبطين.", "Could not load linked children.")); }
-    finally { setLoading(false); }
+  async function loadChildren({ refresh = false } = {}) {
+    if (refresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      setError("");
+
+      const response = await api.get("/parent/children", {
+        params: { _ts: Date.now() },
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
+
+      setChildren(response.data?.children || []);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        navigate("/parent/login", { replace: true });
+      } else {
+        setError(
+          err.response?.data?.message ||
+            pick(
+              "تعذر تحميل الأطفال المرتبطين.",
+              "Could not load linked children.",
+            ),
+        );
+      }
+    } finally {
+      if (refresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+    }
   }
 
   useEffect(() => {
@@ -53,7 +89,7 @@ function ParentDashboard() {
         </section>
 
         <section className="parent-children-section" id="children">
-          <div className="parent-section-heading"><div><span>{pick("عائلتك", "YOUR FAMILY")}</span><h2>{pick("الأطفال المرتبطون", "Linked children")}</h2></div><button type="button" onClick={loadChildren} aria-label={pick("تحديث", "Refresh")}><RefreshCw size={18} /></button></div>
+          <div className="parent-section-heading"><div><span>{pick("عائلتك", "YOUR FAMILY")}</span><h2>{pick("الأطفال المرتبطون", "Linked children")}</h2></div><button type="button" onClick={() => loadChildren({ refresh: true })} disabled={refreshing} aria-busy={refreshing} aria-label={refreshing ? pick("جارٍ التحديث", "Refreshing") : pick("تحديث", "Refresh")} title={refreshing ? pick("جارٍ التحديث...", "Refreshing...") : pick("تحديث", "Refresh")}><RefreshCw size={18} className={refreshing ? "parent-refresh-spin" : ""} /></button></div>
           {error && <div className="parent-dashboard-error" role="alert">⚠️ {error}</div>}
           {loading ? <p className="parent-empty-state">{pick("جارٍ تحميل الأطفال المرتبطين...", "Loading linked children...")}</p> : children.length === 0 ? <div className="parent-empty-state"><Users size={32} /><h3>{pick("لا يوجد أطفال مرتبطون بعد", "No children linked yet")}</h3><p>{pick("أنشئ رمز ربط أعلاه للبدء.", "Generate a link code above to get started.")}</p></div> : <div className="parent-children-grid">{children.map((child) => <button key={child.id} type="button" className="parent-child-card" onClick={() => viewChild(child)}><AvatarPortrait avatar={child.avatar} size="lg" className="parent-child-avatar-image" /><span><strong>{child.nickname}</strong><small>{child.age_group} · {child.total_points || 0} {pick("نقطة", "points")}</small></span><span className="parent-child-arrow">{isArabic ? "←" : "→"}</span></button>)}</div>}
         </section>

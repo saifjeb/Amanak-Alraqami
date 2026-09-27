@@ -31,3 +31,15 @@ html[dir="rtl"] .parent-dashboard-hero-visual img{transform:translateX(-17%)}
   .parent-dashboard-hero-visual{height:175px}
   .parent-dashboard-hero-visual img{width:175%;transform:translateX(-22%)}
 }
+
+/* Linked children refresh */
+.parent-section-heading>button:disabled{
+  opacity:.65;
+  cursor:wait;
+}
+.parent-refresh-spin{
+  animation:parent-refresh-spin .75s linear infinite;
+}
+@keyframes parent-refresh-spin{
+  to{transform:rotate(360deg)}
+}

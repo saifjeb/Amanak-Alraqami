@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api } from "../../api/api.js";
@@ -25,33 +26,97 @@ function getArray(data, keys = []) {
   return Array.isArray(data?.data) ? data.data : [];
 }
 
+async function fetchAdventureData() {
+  const requestConfig = {
+    params: { _ts: Date.now() },
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  };
+
+  const [adventureResponse, progressResponse] = await Promise.all([
+    api.get("/adventures", requestConfig),
+    api.get("/progress/me", requestConfig),
+  ]);
+
+  return {
+    adventures: getArray(adventureResponse.data, ["adventures"]),
+    progress: getArray(progressResponse.data, ["progress", "progresses"]),
+  };
+}
+
 function Adventures() {
   const navigate = useNavigate();
   const { isArabic, pick } = useLanguage();
   const [adventures, setAdventures] = useState([]);
   const [progress, setProgress] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
-    Promise.all([api.get("/adventures"), api.get("/progress/me")])
-      .then(([adventureResponse, progressResponse]) => {
+
+    fetchAdventureData()
+      .then((data) => {
         if (!active) return;
-        setAdventures(getArray(adventureResponse.data, ["adventures"]));
-        setProgress(getArray(progressResponse.data, ["progress", "progresses"]));
+        setAdventures(data.adventures);
+        setProgress(data.progress);
+        setError("");
       })
       .catch((err) => {
         if (!active) return;
+
         if (err.response?.status === 401) {
           navigate("/child/login", { replace: true });
           return;
         }
-        setError(err.response?.data?.message || "We could not load your adventures. Please try again.");
+
+        setError(
+          err.response?.data?.message ||
+            "We could not load your adventures. Please try again.",
+        );
       })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [navigate]);
+
+  async function handleRetry() {
+    if (retrying) {
+      return;
+    }
+
+    try {
+      setRetrying(true);
+      setError("");
+
+      const data = await fetchAdventureData();
+
+      setAdventures(data.adventures);
+      setProgress(data.progress);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        navigate("/child/login", { replace: true });
+        return;
+      }
+
+      setError(
+        err.response?.data?.message ||
+          "We could not load your adventures. Please try again.",
+      );
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   const progressMap = useMemo(() => new Map(progress.map((item) => [Number(item.adventure_id), item])), [progress]);
   const activeAdventures = useMemo(() => adventures
@@ -71,7 +136,7 @@ function Adventures() {
       <section className="adventures-container">
         <section className="adventures-hero"><div><span className="adventure-eyebrow">{pick("استكشف • تعلم • كن آمناً", "EXPLORE • LEARN • STAY SAFE")}</span><h1>{pick("مغامراتك الرقمية", "Your Digital Adventures")}</h1><p className="adventures-arabic">{pick("اختر التحدي المناسب لعمرك وابدأ رحلتك", "Choose the challenge that fits your age and start your journey")}</p><p className="hero-description">{pick("أكمل المغامرات واجمع النقاط والشارات لتصبح بطلاً في الأمان الرقمي.", "Complete the adventures, collect points and badges, and become an Amanak Digital Safety Hero.")}</p></div><div className="hero-shield">🛡️</div></section>
         <section className="journey-progress"><div className="journey-progress-header"><div><span>{pick("رحلتك", "Your Journey")}</span><strong>{isArabic ? `${completedCount} من ${activeAdventures.length} مغامرات مكتملة` : `${completedCount} of ${activeAdventures.length} adventures completed`}</strong></div><strong className="journey-percent">{completionPercent}%</strong></div><div className="journey-progress-track"><div className="journey-progress-value" style={{ width: `${completionPercent}%` }} /></div></section>
-        {error && <section className="adventures-error" role="alert"><span>⚠️</span><div><strong>{pick("حدث خطأ", "Something went wrong")}</strong><p>{error}</p></div><button type="button" onClick={() => window.location.reload()}>{pick("حاول مرة أخرى", "Try Again")}</button></section>}
+        {error && <section className="adventures-error" role="alert"><span>⚠️</span><div><strong>{pick("حدث خطأ", "Something went wrong")}</strong><p>{error}</p></div><button type="button" onClick={handleRetry} disabled={retrying} aria-busy={retrying}><RefreshCw size={16} className={retrying ? "adventures-retry-spin" : ""} />{retrying ? pick("جارٍ المحاولة...", "Retrying...") : pick("حاول مرة أخرى", "Try Again")}</button></section>}
         {!error && activeAdventures.length === 0 && <section className="no-adventures"><span>🧭</span><h2>{pick("لا توجد مغامرات متاحة", "No adventures available")}</h2><p>{pick("عد إلينا قريباً.", "Check back again soon.")}</p></section>}
         {!error && activeAdventures.length > 0 && <section className="adventure-grid">
           {activeAdventures.map((adventure, index) => {

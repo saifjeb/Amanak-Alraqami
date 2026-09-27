@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { RefreshCw } from "lucide-react";
+
 import { api } from "../../api/api.js";
 import AdminNav from "../../components/admin/AdminNav.jsx";
 import AvatarPortrait from "../../components/common/AvatarPortrait.jsx";
-import "./Students.css";
 
+import "./Students.css";
 
 function extractStudents(data) {
   if (Array.isArray(data)) {
@@ -37,30 +39,94 @@ function formatDate(value) {
 
 function Students() {
   const navigate = useNavigate();
+
   const [students, setStudents] = useState([]);
+  const [summary, setSummary] = useState({
+    total_students: 0,
+    disabled: 0,
+  });
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [changingId, setChangingId] = useState(null);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ageFilter, setAgeFilter] = useState("all");
+
   const [error, setError] = useState("");
-  async function loadStudents() {
+
+  async function loadStudents({ refresh = false } = {}) {
+    const startedAt = Date.now();
+
+    if (refresh) {
+      setRefreshing(true);
+    }
+
     try {
       setError("");
 
-      const response = await api.get("/admin/students/status");
+      const response = await api.get("/admin/students/status", {
+        params: {
+          page: 1,
+          limit: 100,
+          _ts: Date.now(),
+        },
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
 
-      setStudents(extractStudents(response.data));
+      const nextStudents = extractStudents(response.data);
+      const serverSummary = response.data?.summary || {};
+
+      setStudents(nextStudents);
+
+      setSummary({
+        ...serverSummary,
+        total_students: Number(
+          serverSummary.total_students ?? nextStudents.length,
+        ),
+        disabled: Number(
+          serverSummary.disabled ??
+            nextStudents.filter(
+              (student) => student.is_enabled === false,
+            ).length,
+        ),
+      });
+
+      setLastUpdated(new Date());
     } catch (err) {
       console.error("Load students error:", err);
 
       if (err.response?.status === 401) {
-        navigate("/admin/login", { replace: true });
+        navigate("/admin/login", {
+          replace: true,
+        });
 
         return;
       }
 
-      setError(err.response?.data?.message || "Could not load students.");
+      setError(
+        err.response?.data?.message ||
+          "Could not load students.",
+      );
+    } finally {
+      if (refresh) {
+        const elapsed = Date.now() - startedAt;
+        const minimumVisibleTime = 600;
+
+        if (elapsed < minimumVisibleTime) {
+          await new Promise((resolve) => {
+            setTimeout(resolve, minimumVisibleTime - elapsed);
+          });
+        }
+
+        setRefreshing(false);
+      }
     }
   }
 
@@ -97,24 +163,25 @@ function Students() {
 
       const matchesStatus =
         statusFilter === "all" ||
-        (statusFilter === "enabled" && student.is_enabled === true) ||
-        (statusFilter === "disabled" && student.is_enabled === false);
+        (statusFilter === "enabled" &&
+          student.is_enabled === true) ||
+        (statusFilter === "disabled" &&
+          student.is_enabled === false);
 
-      const matchesAge = ageFilter === "all" || student.age_group === ageFilter;
+      const matchesAge =
+        ageFilter === "all" ||
+        student.age_group === ageFilter;
 
       return matchesSearch && matchesStatus && matchesAge;
     });
   }, [students, search, statusFilter, ageFilter]);
 
-  const enabledCount = students.filter(
-    (student) => student.is_enabled === true,
-  ).length;
-
-  const disabledCount = students.length - enabledCount;
+  const totalCount = Number(summary.total_students) || 0;
+  const disabledCount = Number(summary.disabled) || 0;
+  const enabledCount = Math.max(0, totalCount - disabledCount);
 
   async function changeStatus(student) {
     const shouldEnable = student.is_enabled === false;
-
     const action = shouldEnable ? "enable" : "disable";
 
     const message = shouldEnable
@@ -127,22 +194,60 @@ function Students() {
 
     try {
       setChangingId(student.id);
-
       setError("");
 
-      await api.patch(`/admin/students/${student.id}/${action}`);
+      const response = await api.patch(
+        `/admin/students/${student.id}/${action}`,
+      );
 
-      await loadStudents();
+      const updatedStudent = response.data?.student;
+
+      setStudents((currentStudents) =>
+        currentStudents.map((item) => {
+          if (Number(item.id) !== Number(student.id)) {
+            return item;
+          }
+
+          return {
+            ...item,
+            ...(updatedStudent || {}),
+            is_enabled:
+              typeof updatedStudent?.is_enabled === "boolean"
+                ? updatedStudent.is_enabled
+                : shouldEnable,
+          };
+        }),
+      );
+
+      setSummary((currentSummary) => {
+        const currentDisabled =
+          Number(currentSummary.disabled) || 0;
+
+        return {
+          ...currentSummary,
+          disabled: Math.max(
+            0,
+            currentDisabled + (shouldEnable ? -1 : 1),
+          ),
+        };
+      });
+
+      setLastUpdated(new Date());
     } catch (err) {
       console.error("Student status error:", err);
 
       if (err.response?.status === 401) {
-        navigate("/admin/login", { replace: true });
+        navigate("/admin/login", {
+          replace: true,
+        });
 
         return;
       }
 
-      setError(err.response?.data?.message || `Could not ${action} student.`);
+      setError(
+        err.response?.data?.message ||
+          `Could not ${action} student.`,
+      );
     } finally {
       setChangingId(null);
     }
@@ -153,7 +258,6 @@ function Students() {
       <main className="students-page">
         <div className="students-loading">
           <div className="students-spinner" />
-
           <h2>Loading students...</h2>
         </div>
       </main>
@@ -168,37 +272,34 @@ function Students() {
         <section className="students-hero">
           <div>
             <span>STUDENT MANAGEMENT</span>
-
             <h1>Manage Students</h1>
-
-            <p>Review child accounts, activity, points and account access.</p>
+            <p>
+              Review child accounts, activity, points and account access.
+            </p>
           </div>
 
           <div className="students-hero-icon">👥</div>
         </section>
 
-        <section className="student-summary-grid">
+        <section
+          className="student-summary-grid"
+          aria-live="polite"
+        >
           <article>
             <span>👧</span>
-
-            <strong>{students.length}</strong>
-
+            <strong>{totalCount}</strong>
             <p>Total Students</p>
           </article>
 
           <article>
             <span>✅</span>
-
             <strong>{enabledCount}</strong>
-
             <p>Enabled</p>
           </article>
 
           <article>
             <span>⛔</span>
-
             <strong>{disabledCount}</strong>
-
             <p>Disabled</p>
           </article>
         </section>
@@ -210,36 +311,66 @@ function Students() {
             <input
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
               placeholder="Search by nickname or ID..."
             />
           </div>
 
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            onChange={(event) =>
+              setStatusFilter(event.target.value)
+            }
           >
             <option value="all">All Statuses</option>
-
             <option value="enabled">Enabled</option>
-
             <option value="disabled">Disabled</option>
           </select>
 
           <select
             value={ageFilter}
-            onChange={(event) => setAgeFilter(event.target.value)}
+            onChange={(event) =>
+              setAgeFilter(event.target.value)
+            }
           >
             <option value="all">All Ages</option>
-
             <option value="8-10">Age 8–10</option>
-
             <option value="11-14">Age 11–14</option>
           </select>
 
-          <button type="button" onClick={loadStudents}>
-            ↻ Refresh
+          <button
+            type="button"
+            className="students-refresh-button"
+            onClick={() =>
+              loadStudents({
+                refresh: true,
+              })
+            }
+            disabled={refreshing || changingId !== null}
+            aria-busy={refreshing}
+          >
+            <RefreshCw
+              size={16}
+              className={
+                refreshing
+                  ? "students-refresh-spin"
+                  : ""
+              }
+            />
+
+            {refreshing ? "Refreshing..." : "Refresh"}
           </button>
+
+          {lastUpdated && !refreshing && (
+            <small
+              className="students-last-updated"
+              aria-live="polite"
+            >
+              ✓ Updated {lastUpdated.toLocaleTimeString()}
+            </small>
+          )}
         </section>
 
         {error && (
@@ -252,7 +383,6 @@ function Students() {
           <div className="students-table-heading">
             <div>
               <span>ACCOUNTS</span>
-
               <h2>Students</h2>
             </div>
 
@@ -262,9 +392,7 @@ function Students() {
           {filteredStudents.length === 0 ? (
             <div className="students-empty">
               <span>🔍</span>
-
               <h3>No students found</h3>
-
               <p>Try changing the search or filter.</p>
             </div>
           ) : (
@@ -273,17 +401,11 @@ function Students() {
                 <thead>
                   <tr>
                     <th>Student</th>
-
                     <th>Age</th>
-
                     <th>Points</th>
-
                     <th>Level</th>
-
                     <th>Last Active</th>
-
                     <th>Status</th>
-
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -293,11 +415,14 @@ function Students() {
                     <tr key={student.id}>
                       <td>
                         <div className="student-name-cell">
-                          <AvatarPortrait avatar={student.avatar} size="md" className="student-table-avatar" />
+                          <AvatarPortrait
+                            avatar={student.avatar}
+                            size="md"
+                            className="student-table-avatar"
+                          />
 
                           <div>
                             <strong>{student.nickname}</strong>
-
                             <small>ID #{student.id}</small>
                           </div>
                         </div>
@@ -311,7 +436,9 @@ function Students() {
                         </strong>
                       </td>
 
-                      <td>{student.current_level || "Digital Explorer"}</td>
+                      <td>
+                        {student.current_level || "Digital Explorer"}
+                      </td>
 
                       <td>
                         <span
@@ -325,23 +452,35 @@ function Students() {
                       <td>
                         <span
                           className={`student-status ${
-                            student.is_enabled ? "enabled" : "disabled"
+                            student.is_enabled
+                              ? "enabled"
+                              : "disabled"
                           }`}
                         >
-                          {student.is_enabled ? "● Enabled" : "● Disabled"}
+                          {student.is_enabled
+                            ? "● Enabled"
+                            : "● Disabled"}
                         </span>
                       </td>
 
                       <td>
                         <div className="student-actions">
-                          <Link to={`/admin/students/${student.id}`}>View</Link>
+                          <Link
+                            to={`/admin/students/${student.id}`}
+                          >
+                            View
+                          </Link>
 
                           <button
                             type="button"
                             className={
-                              student.is_enabled ? "disable" : "enable"
+                              student.is_enabled
+                                ? "disable"
+                                : "enable"
                             }
-                            onClick={() => changeStatus(student)}
+                            onClick={() =>
+                              changeStatus(student)
+                            }
                             disabled={changingId === student.id}
                           >
                             {changingId === student.id
