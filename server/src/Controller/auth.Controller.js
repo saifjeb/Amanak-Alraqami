@@ -11,7 +11,7 @@ const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 const cookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: "lax",
+  sameSite: isProd && process.env.COOKIE_SAME_SITE === "none" ? "none" : "lax",
   path: "/",
 };
 

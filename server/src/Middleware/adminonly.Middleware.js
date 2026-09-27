@@ -7,7 +7,7 @@ const clearAdminCookie = (res) => {
   res.clearCookie("adminAccessToken", {
     httpOnly: true,
     secure: isProd,
-    sameSite: "lax",
+    sameSite: isProd && process.env.COOKIE_SAME_SITE === "none" ? "none" : "lax",
     path: "/",
   });
 };

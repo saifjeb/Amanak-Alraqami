@@ -74,6 +74,13 @@ app.use(
 
 app.use(cookieParser());
 
+app.get("/health", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    status: "ok",
+  });
+});
+
 app.use("/api", authRoutes);
 app.use("/api", parentRoutes);
 app.use("/api/users", userRoutes);

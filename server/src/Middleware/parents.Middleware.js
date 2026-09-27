@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+﻿import jwt from "jsonwebtoken";
 import { getParentById } from "../Model/parents.Models.js";
 import { clearParentRefreshToken } from "../Model/parents.Models.js";
 
@@ -8,7 +8,7 @@ const isProd =
 const cookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: "lax",
+  sameSite: isProd && process.env.COOKIE_SAME_SITE === "none" ? "none" : "lax",
   path: "/",
 };
 
