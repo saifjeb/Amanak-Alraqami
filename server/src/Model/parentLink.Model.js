@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 
 export const createLinkCode = async (parentId, code) => {
+  await deleteExpiredOrUsedLinkCodes();
   await pool.query(`DELETE FROM link_codes WHERE parent_id = $1 AND used_at IS NULL;`,[parentId],);
   const result = await pool.query(`INSERT INTO link_codes (code,parent_id,expires_at)
     VALUES ($1,$2,CURRENT_TIMESTAMP + INTERVAL '10 minutes') RETURNING code,parent_id,expires_at,created_at;`,[code, parentId],);
@@ -43,6 +44,8 @@ export const useLinkCode = async (code, childId) => {
       `INSERT INTO parent_children (parent_id,child_id) VALUES ($1, $2) ON CONFLICT (parent_id, child_id) DO NOTHING
        RETURNING id,parent_id,child_id,created_at;`,[linkCode.parent_id, childId]);
        await client.query(`UPDATE link_codes SET used_at = CURRENT_TIMESTAMP WHERE code = $1;`,[code],);
+      await deleteExpiredOrUsedLinkCodes(client);
+
       await client.query("COMMIT");
 
     return {
@@ -66,4 +69,18 @@ export const getLinkedChildren = async (parentId) => {const result = await pool.
     FROM parent_children pc JOIN users u ON u.id = pc.child_id WHERE pc.parent_id = $1 ORDER BY pc.created_at ASC;`,
     [parentId],);
     return result.rows;
+};
+
+export const deleteExpiredOrUsedLinkCodes = async (
+  db = pool,
+) => {
+  const result = await db.query(
+    `
+    DELETE FROM link_codes
+    WHERE expires_at <= CURRENT_TIMESTAMP
+       OR used_at IS NOT NULL;
+    `,
+  );
+
+  return result.rowCount;
 };

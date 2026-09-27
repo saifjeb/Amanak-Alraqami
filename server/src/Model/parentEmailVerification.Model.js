@@ -16,6 +16,8 @@ export const createParentVerificationCode = async ({
   codeDigest,
   expiresAt,
 }) => {
+  await deleteExpiredOrUsedParentVerificationCodes();
+
   const result = await pool.query(
     `
     INSERT INTO parent_email_verification_codes (
@@ -160,6 +162,8 @@ export const verifyParentEmailWithCode = async ({ parentId, codeDigest }) => {
       [parentId],
     );
 
+    await deleteExpiredOrUsedParentVerificationCodes(client);
+
     await client.query("COMMIT");
 
     return parent;
@@ -187,4 +191,18 @@ export const getParentVerificationStatus = async (parentId) => {
   );
 
   return result.rows[0] || null;
+};
+
+export const deleteExpiredOrUsedParentVerificationCodes = async (
+  db = pool,
+) => {
+  const result = await db.query(
+    `
+    DELETE FROM parent_email_verification_codes
+    WHERE expires_at <= NOW()
+       OR used_at IS NOT NULL;
+    `,
+  );
+
+  return result.rowCount;
 };

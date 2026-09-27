@@ -353,8 +353,13 @@ export async function useTwoFactorRecoveryCode({
   accountId,
   codeHash,
 }) {
-  const result = await pool.query(
-    `
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `
       UPDATE two_factor_recovery_codes
       SET used_at = NOW()
       WHERE account_type = $1
@@ -366,8 +371,47 @@ export async function useTwoFactorRecoveryCode({
         id,
         used_at;
       `,
-    [accountType, accountId, codeHash],
+      [accountType, accountId, codeHash],
+    );
+
+    const consumed = result.rows[0] || null;
+
+    if (!consumed) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    await deleteUsedTwoFactorRecoveryCodes(
+      accountType,
+      accountId,
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return consumed;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteUsedTwoFactorRecoveryCodes(
+  accountType,
+  accountId,
+  db = pool,
+) {
+  const result = await db.query(
+    `
+    DELETE FROM two_factor_recovery_codes
+    WHERE account_type = $1
+      AND account_id = $2
+      AND used_at IS NOT NULL;
+    `,
+    [accountType, accountId],
   );
 
-  return result.rows[0] || null;
+  return result.rowCount;
 }

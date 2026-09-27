@@ -6,6 +6,7 @@ import { getParentByEmail } from "../Model/parents.Models.js";
 
 import {
   deleteActivePasswordResetTokens,
+  deleteExpiredPasswordResetTokens,
   createPasswordResetToken,
   resetPasswordWithToken,
 } from "../Model/passwordReset.Model.js";
@@ -42,6 +43,8 @@ const normalizeEmail = (email) => {
 };
 
 const processPasswordResetRequest = async ({ email, accountType }) => {
+  await deleteExpiredPasswordResetTokens();
+
   const account =
     accountType === "admin"
       ? await getAdminByEmail(email)
@@ -124,6 +127,8 @@ const processNewPassword = async ({ req, res, accountType }) => {
         message: "Invalid or expired password reset link.",
       });
     }
+
+    await deleteExpiredPasswordResetTokens();
 
     if (accountType === "parent") {
       res.clearCookie("parentAccessToken", cookieOptions);

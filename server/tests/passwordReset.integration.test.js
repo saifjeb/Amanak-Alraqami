@@ -156,6 +156,17 @@ test("parent can reset password with valid token", async () => {
   );
 
   assert.equal(parent.refresh_token, null);
+
+  const parentTokenCleanupResult = await pool.query(
+    `
+    SELECT id
+    FROM password_reset_tokens
+    WHERE token_hash = $1;
+    `,
+    [hashToken(token)],
+  );
+
+  assert.equal(parentTokenCleanupResult.rows.length, 0);
 });
 
 test("used parent reset token cannot be reused", async () => {
@@ -237,6 +248,17 @@ test("admin can reset password with valid token", async () => {
     await bcrypt.compare(OLD_ADMIN_PASSWORD, admin.hashed_password),
     false,
   );
+
+  const adminTokenCleanupResult = await pool.query(
+    `
+    SELECT id
+    FROM password_reset_tokens
+    WHERE token_hash = $1;
+    `,
+    [hashToken(token)],
+  );
+
+  assert.equal(adminTokenCleanupResult.rows.length, 0);
 });
 
 test("used admin reset token cannot be reused", async () => {

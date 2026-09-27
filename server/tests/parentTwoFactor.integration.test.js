@@ -383,6 +383,25 @@ test("valid parent recovery code completes login", async () => {
   const meResponse = await agent.get("/api/parent/me").expect(200);
 
   assert.equal(meResponse.body.success, true);
+
+  const consumedRecoveryHash = hashTwoFactorRecoveryCode({
+    accountType: "parent",
+    accountId: parentId,
+    code: recoveryCode,
+  });
+
+  const parentRecoveryCleanupResult = await pool.query(
+    `
+    SELECT id
+    FROM two_factor_recovery_codes
+    WHERE account_type = $1
+      AND account_id = $2
+      AND code_hash = $3;
+    `,
+    ["parent", parentId, consumedRecoveryHash],
+  );
+
+  assert.equal(parentRecoveryCleanupResult.rows.length, 0);
 });
 
 test("used parent recovery code cannot be reused", async () => {

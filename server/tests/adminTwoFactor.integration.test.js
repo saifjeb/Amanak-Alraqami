@@ -311,6 +311,25 @@ test("valid admin recovery code completes login", async () => {
   const meResponse = await agent.get("/api/admin/me").expect(200);
 
   assert.equal(meResponse.body.success, true);
+
+  const consumedRecoveryHash = hashTwoFactorRecoveryCode({
+    accountType: "admin",
+    accountId: adminId,
+    code: recoveryCode,
+  });
+
+  const adminRecoveryCleanupResult = await pool.query(
+    `
+    SELECT id
+    FROM two_factor_recovery_codes
+    WHERE account_type = $1
+      AND account_id = $2
+      AND code_hash = $3;
+    `,
+    ["admin", adminId, consumedRecoveryHash],
+  );
+
+  assert.equal(adminRecoveryCleanupResult.rows.length, 0);
 });
 
 test("used admin recovery code cannot be reused", async () => {

@@ -191,7 +191,7 @@ test("expired verification code is rejected", async () => {
   assert.equal(parentResult.rows[0].email_verified_at, null);
 });
 
-test("valid verification code verifies parent", async () => {
+test("valid verification code verifies parent and removes used code", async () => {
   await createVerificationCode("222222");
 
   const response = await request(app)
@@ -227,9 +227,7 @@ test("valid verification code verifies parent", async () => {
     [parentId],
   );
 
-  assert.equal(codeResult.rows.length, 1);
-
-  assert.ok(codeResult.rows[0].used_at);
+  assert.equal(codeResult.rows.length, 0);
 });
 
 test("used verification code cannot be reused", async () => {
