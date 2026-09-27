@@ -117,8 +117,8 @@ function ParentSecurity() {
       setError(
         err.response?.data?.message ||
           pick(
-            "تعذر بدء إعداد التحقق بخطوتين.",
-            "Could not start two-step verification setup.",
+            "تعذر بدء إعداد التحقق بخطوتين أو إنشاء رمز QR. حاول مرة أخرى.",
+            "Could not start two-step verification setup or generate the QR code. Please try again.",
           ),
       );
     } finally {
@@ -181,6 +181,17 @@ function ParentSecurity() {
           replace: true,
         });
 
+        return;
+      }
+
+      if (err.response?.data?.code === "TWO_FACTOR_INVALID_CODE") {
+        setToken("");
+        setError(
+          pick(
+            "رمز المصادقة غير صالح أو انتهت صلاحيته. انتظر رمزاً جديداً وتأكد من تفعيل التاريخ والوقت التلقائي في هاتفك.",
+            "The authenticator code is invalid or expired. Wait for a new code and make sure automatic date and time is enabled on your phone.",
+          ),
+        );
         return;
       }
 
@@ -438,6 +449,22 @@ function ParentSecurity() {
                     "Do not share this key with anyone.",
                   )}
                 </small>
+
+                <button
+                  type="button"
+                  className="parent-security-secondary"
+                  onClick={() => startSetup()}
+                  disabled={starting || confirming}
+                >
+                  <ShieldCheck size={17} />
+
+                  {starting
+                    ? pick(
+                        "جارٍ إنشاء رمز جديد...",
+                        "Generating a new QR code...",
+                      )
+                    : pick("إنشاء رمز QR جديد", "Generate a New QR Code")}
+                </button>
               </div>
             </div>
 
@@ -479,7 +506,7 @@ function ParentSecurity() {
               <button
                 type="submit"
                 className="parent-security-primary"
-                disabled={confirming}
+                disabled={confirming || token.length !== 6}
               >
                 <ShieldCheck size={18} />
 

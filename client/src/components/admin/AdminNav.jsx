@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 import {
   BarChart3,
   BookOpenCheck,
@@ -6,11 +8,15 @@ import {
   Image,
   LayoutDashboard,
   LogOut,
+  Menu,
   Settings,
   ShieldCheck,
   UsersRound,
+  X,
 } from "lucide-react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+
 import logo from "../../assets/amanak-logo.svg";
 import { useAuth } from "../../hooks/useAuth.js";
 import { useLanguage } from "../../i18n/useLanguage.js";
@@ -19,8 +25,12 @@ import "./AdminNav.css";
 
 function AdminNav() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, adminLogout } = useAuth();
   const { pick } = useLanguage();
+
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const workspaceItems = [
     {
@@ -53,11 +63,33 @@ function AdminNav() {
     },
   ];
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
   async function logout() {
     try {
       await adminLogout();
     } finally {
-      navigate("/admin/login", { replace: true });
+      setMobileOpen(false);
+
+      navigate("/admin/login", {
+        replace: true,
+      });
     }
   }
 
@@ -69,8 +101,10 @@ function AdminNav() {
         className={({ isActive }) =>
           isActive ? "admin-side-link active" : "admin-side-link"
         }
+        onClick={() => setMobileOpen(false)}
       >
         <Icon size={20} strokeWidth={2.1} />
+
         <span>{label}</span>
       </NavLink>
     ));
@@ -78,21 +112,50 @@ function AdminNav() {
 
   return (
     <>
-      <aside className="admin-sidebar" data-no-auto-translate="true">
-        <Link to="/admin/dashboard" className="admin-sidebar-brand">
-          <img src={logo} alt="" />
-          <span>
-            <strong>{pick("أمانك الرقمي", "Amanak Alraqami")}</strong>
-            <small>{pick("منصة الإدارة", "Admin Platform")}</small>
-          </span>
-        </Link>
+      <button
+        type="button"
+        className={`admin-mobile-overlay ${mobileOpen ? "visible" : ""}`}
+        onClick={() => setMobileOpen(false)}
+        aria-label={pick("إغلاق قائمة الإدارة", "Close admin menu")}
+        tabIndex={mobileOpen ? 0 : -1}
+      />
+
+      <aside
+        className={`admin-sidebar ${mobileOpen ? "mobile-open" : ""}`}
+        data-no-auto-translate="true"
+      >
+        <div className="admin-sidebar-mobile-head">
+          <Link
+            to="/admin/dashboard"
+            className="admin-sidebar-brand"
+            onClick={() => setMobileOpen(false)}
+          >
+            <img src={logo} alt="" />
+
+            <span>
+              <strong>{pick("أمانك الرقمي", "Amanak Alraqami")}</strong>
+
+              <small>{pick("منصة الإدارة", "Admin Platform")}</small>
+            </span>
+          </Link>
+
+          <button
+            type="button"
+            className="admin-sidebar-close"
+            onClick={() => setMobileOpen(false)}
+            aria-label={pick("إغلاق القائمة", "Close menu")}
+          >
+            <X size={22} />
+          </button>
+        </div>
 
         <div className="admin-sidebar-scroll">
           <section className="admin-side-section">
             <span className="admin-side-label">
               {pick("مساحة العمل", "MY WORKSPACE")}
             </span>
-            <nav aria-label={pick("مساحة عمل الإدارة", "Admin workspace")}> 
+
+            <nav aria-label={pick("مساحة عمل الإدارة", "Admin workspace")}>
               {renderLinks(workspaceItems)}
             </nav>
           </section>
@@ -101,7 +164,8 @@ function AdminNav() {
             <span className="admin-side-label">
               {pick("إدارة المحتوى", "CONTENT MANAGEMENT")}
             </span>
-            <nav aria-label={pick("إدارة المحتوى", "Content management")}> 
+
+            <nav aria-label={pick("إدارة المحتوى", "Content management")}>
               {renderLinks(contentItems)}
             </nav>
           </section>
@@ -117,8 +181,10 @@ function AdminNav() {
                 className={({ isActive }) =>
                   isActive ? "admin-side-link active" : "admin-side-link"
                 }
+                onClick={() => setMobileOpen(false)}
               >
                 <BarChart3 size={20} strokeWidth={2.1} />
+
                 <span>{pick("التحليلات", "Analytics")}</span>
               </NavLink>
 
@@ -127,8 +193,10 @@ function AdminNav() {
                 className={({ isActive }) =>
                   isActive ? "admin-side-link active" : "admin-side-link"
                 }
+                onClick={() => setMobileOpen(false)}
               >
                 <ShieldCheck size={20} strokeWidth={2.1} />
+
                 <span>{pick("الأمان والتدقيق", "Security / Audit")}</span>
               </NavLink>
 
@@ -137,8 +205,10 @@ function AdminNav() {
                 className={({ isActive }) =>
                   isActive ? "admin-side-link active" : "admin-side-link"
                 }
+                onClick={() => setMobileOpen(false)}
               >
                 <Settings size={20} strokeWidth={2.1} />
+
                 <span>{pick("الإعدادات", "Settings")}</span>
               </NavLink>
             </nav>
@@ -147,9 +217,24 @@ function AdminNav() {
       </aside>
 
       <header className="admin-topbar" data-no-auto-translate="true">
-        <div className="admin-topbar-user">
-          <strong>{user?.name || pick("مدير النظام", "Administrator")}</strong>
-          <span>{user?.email || pick("حساب الإدارة", "Admin account")}</span>
+        <div className="admin-topbar-start">
+          <button
+            type="button"
+            className="admin-mobile-menu"
+            onClick={() => setMobileOpen(true)}
+            aria-label={pick("فتح قائمة الإدارة", "Open admin menu")}
+            aria-expanded={mobileOpen}
+          >
+            <Menu size={22} />
+          </button>
+
+          <div className="admin-topbar-user">
+            <strong>
+              {user?.name || pick("مدير النظام", "Administrator")}
+            </strong>
+
+            <span>{user?.email || pick("حساب الإدارة", "Admin account")}</span>
+          </div>
         </div>
 
         <div className="admin-topbar-actions">
@@ -166,8 +251,13 @@ function AdminNav() {
             <Home size={20} />
           </Link>
 
-          <button type="button" className="admin-topbar-logout" onClick={logout}>
+          <button
+            type="button"
+            className="admin-topbar-logout"
+            onClick={logout}
+          >
             <LogOut size={19} />
+
             <span>{pick("تسجيل الخروج", "Logout")}</span>
           </button>
         </div>

@@ -3,6 +3,10 @@ import crypto from "node:crypto";
 import { generateSecret, generateURI, verify } from "otplib";
 
 const ISSUER = "Amanak Alraqami";
+const TOTP_ALGORITHM = "sha1";
+const TOTP_DIGITS = 6;
+const TOTP_PERIOD = 30;
+const TOTP_TOLERANCE_SECONDS = 30;
 
 function getEncryptionKey() {
   const encodedKey = process.env.TWO_FACTOR_ENCRYPTION_KEY;
@@ -36,13 +40,51 @@ function getRecoveryCodeSecret() {
   return secret;
 }
 
+function normalizeSetupIdentity({ email, accountType }) {
+  const normalizedEmail =
+    typeof email === "string" ? email.trim().toLowerCase() : "";
+
+  if (!normalizedEmail) {
+    throw new Error("Email is required for 2FA setup");
+  }
+
+  if (accountType !== "parent" && accountType !== "admin") {
+    throw new Error("Invalid 2FA account type");
+  }
+
+  const accountLabel =
+    accountType === "admin"
+      ? `Admin - ${normalizedEmail}`
+      : `Parent - ${normalizedEmail}`;
+
+  return {
+    normalizedEmail,
+    accountLabel,
+  };
+}
+
+function createOtpAuthUrl({ secret, email, accountType }) {
+  const { accountLabel } = normalizeSetupIdentity({
+    email,
+    accountType,
+  });
+
+  return generateURI({
+    issuer: ISSUER,
+    label: accountLabel,
+    secret,
+    algorithm: TOTP_ALGORITHM,
+    digits: TOTP_DIGITS,
+    period: TOTP_PERIOD,
+  });
+}
+
 export function encryptTwoFactorSecret(secret) {
   if (typeof secret !== "string" || !secret) {
     throw new Error("2FA secret is invalid");
   }
 
   const key = getEncryptionKey();
-
   const iv = crypto.randomBytes(12);
 
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
@@ -73,13 +115,10 @@ export function decryptTwoFactorSecret(encryptedValue) {
   }
 
   const [ivValue, authTagValue, encryptedSecretValue] = parts;
-
   const key = getEncryptionKey();
 
   const iv = Buffer.from(ivValue, "base64");
-
   const authTag = Buffer.from(authTagValue, "base64");
-
   const encryptedSecret = Buffer.from(encryptedSecretValue, "base64");
 
   if (
@@ -103,34 +142,34 @@ export function decryptTwoFactorSecret(encryptedValue) {
 }
 
 export function createTwoFactorSetup({ email, accountType }) {
-  const normalizedEmail =
-    typeof email === "string" ? email.trim().toLowerCase() : "";
-
-  if (!normalizedEmail) {
-    throw new Error("Email is required for 2FA setup");
-  }
-
-  if (accountType !== "parent" && accountType !== "admin") {
-    throw new Error("Invalid 2FA account type");
-  }
-
   const secret = generateSecret();
-
-  const accountLabel =
-    accountType === "admin"
-      ? `Admin - ${normalizedEmail}`
-      : `Parent - ${normalizedEmail}`;
-
-  const otpauthUrl = generateURI({
-    issuer: ISSUER,
-    label: accountLabel,
-    secret,
-  });
 
   return {
     secret,
     encryptedSecret: encryptTwoFactorSecret(secret),
-    otpauthUrl,
+    otpauthUrl: createOtpAuthUrl({
+      secret,
+      email,
+      accountType,
+    }),
+  };
+}
+
+export function resumeTwoFactorSetup({
+  email,
+  accountType,
+  encryptedSecret,
+}) {
+  const secret = decryptTwoFactorSecret(encryptedSecret);
+
+  return {
+    secret,
+    encryptedSecret,
+    otpauthUrl: createOtpAuthUrl({
+      secret,
+      email,
+      accountType,
+    }),
   };
 }
 
@@ -139,7 +178,8 @@ export async function verifyTwoFactorToken({
   token,
   lastUsedTimeStep = null,
 }) {
-  const normalizedToken = typeof token === "string" ? token.trim() : "";
+  const normalizedToken =
+    typeof token === "string" ? token.trim() : "";
 
   if (!/^\d{6}$/.test(normalizedToken)) {
     return {
@@ -153,12 +193,22 @@ export async function verifyTwoFactorToken({
   const options = {
     secret,
     token: normalizedToken,
+    algorithm: TOTP_ALGORITHM,
+    digits: TOTP_DIGITS,
+    period: TOTP_PERIOD,
+    epochTolerance: TOTP_TOLERANCE_SECONDS,
   };
 
-  if (lastUsedTimeStep !== null && lastUsedTimeStep !== undefined) {
+  if (
+    lastUsedTimeStep !== null &&
+    lastUsedTimeStep !== undefined
+  ) {
     const parsedTimeStep = Number(lastUsedTimeStep);
 
-    if (Number.isSafeInteger(parsedTimeStep) && parsedTimeStep >= 0) {
+    if (
+      Number.isSafeInteger(parsedTimeStep) &&
+      parsedTimeStep >= 0
+    ) {
       options.afterTimeStep = parsedTimeStep;
     }
   }
@@ -207,7 +257,11 @@ export function generateTwoFactorRecoveryCodes(count = 8) {
   });
 }
 
-export function hashTwoFactorRecoveryCode({ accountType, accountId, code }) {
+export function hashTwoFactorRecoveryCode({
+  accountType,
+  accountId,
+  code,
+}) {
   if (accountType !== "parent" && accountType !== "admin") {
     throw new Error("Invalid 2FA account type");
   }

@@ -24,6 +24,14 @@ function getAuthenticatedAccount(req, accountType) {
   return null;
 }
 
+function preventSensitiveResponseCaching(res) {
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, private",
+    Pragma: "no-cache",
+    Expires: "0",
+  });
+}
+
 async function startTwoFactorSetup(req, res, next, accountType) {
   try {
     const account = getAuthenticatedAccount(req, accountType);
@@ -35,7 +43,10 @@ async function startTwoFactorSetup(req, res, next, accountType) {
       });
     }
 
-    const settings = await getTwoFactorSettings(accountType, account.id);
+    const settings = await getTwoFactorSettings(
+      accountType,
+      account.id,
+    );
 
     if (!settings) {
       return res.status(404).json({
@@ -52,6 +63,17 @@ async function startTwoFactorSetup(req, res, next, accountType) {
       });
     }
 
+    /*
+     * An explicit setup request always creates a fresh secret.
+     *
+     * This avoids reusing a stale/corrupted pending secret and is also
+     * the safest behaviour when a previously displayed QR/manual key
+     * may have been exposed.
+     *
+     * Merely refreshing the Security page does NOT call this endpoint,
+     * so a secret changes only when the user deliberately starts setup
+     * (or asks for a new QR code).
+     */
     const setup = createTwoFactorSetup({
       email: settings.email,
       accountType,
@@ -70,6 +92,8 @@ async function startTwoFactorSetup(req, res, next, accountType) {
       });
     }
 
+    preventSensitiveResponseCaching(res);
+
     return res.status(200).json({
       success: true,
       message: "Two-step verification setup created.",
@@ -83,7 +107,12 @@ async function startTwoFactorSetup(req, res, next, accountType) {
   }
 }
 
-async function confirmTwoFactorSetup(req, res, next, accountType) {
+async function confirmTwoFactorSetup(
+  req,
+  res,
+  next,
+  accountType,
+) {
   try {
     const account = getAuthenticatedAccount(req, accountType);
 
@@ -95,16 +124,23 @@ async function confirmTwoFactorSetup(req, res, next, accountType) {
     }
 
     const token =
-      typeof req.body?.token === "string" ? req.body.token.trim() : "";
+      typeof req.body?.token === "string"
+        ? req.body.token.trim()
+        : "";
 
     if (!/^\d{6}$/.test(token)) {
       return res.status(400).json({
         success: false,
-        message: "Authenticator code must contain exactly 6 digits.",
+        code: "TWO_FACTOR_INVALID_FORMAT",
+        message:
+          "Authenticator code must contain exactly 6 digits.",
       });
     }
 
-    const settings = await getTwoFactorSettings(accountType, account.id);
+    const settings = await getTwoFactorSettings(
+      accountType,
+      account.id,
+    );
 
     if (!settings) {
       return res.status(404).json({
@@ -130,45 +166,55 @@ async function confirmTwoFactorSetup(req, res, next, accountType) {
     }
 
     const verification = await verifyTwoFactorToken({
-      encryptedSecret: settings.two_factor_secret_encrypted,
+      encryptedSecret:
+        settings.two_factor_secret_encrypted,
       token,
-      lastUsedTimeStep: settings.two_factor_last_used_step,
+      lastUsedTimeStep:
+        settings.two_factor_last_used_step,
     });
 
     if (!verification.valid) {
       return res.status(400).json({
         success: false,
+        code: "TWO_FACTOR_INVALID_CODE",
         message: "Invalid authenticator code.",
       });
     }
 
-    const recoveryCodes = generateTwoFactorRecoveryCodes(8);
+    const recoveryCodes =
+      generateTwoFactorRecoveryCodes(8);
 
-    const recoveryCodeHashes = recoveryCodes.map((code) =>
-      hashTwoFactorRecoveryCode({
+    const recoveryCodeHashes =
+      recoveryCodes.map((code) =>
+        hashTwoFactorRecoveryCode({
+          accountType,
+          accountId: account.id,
+          code,
+        }),
+      );
+
+    const enabledAccount =
+      await enableTwoFactorWithRecoveryCodes({
         accountType,
         accountId: account.id,
-        code,
-      }),
-    );
-
-    const enabledAccount = await enableTwoFactorWithRecoveryCodes({
-      accountType,
-      accountId: account.id,
-      timeStep: verification.timeStep,
-      recoveryCodeHashes,
-    });
+        timeStep: verification.timeStep,
+        recoveryCodeHashes,
+      });
 
     if (!enabledAccount) {
       return res.status(400).json({
         success: false,
-        message: "Could not enable two-step verification.",
+        message:
+          "Could not enable two-step verification.",
       });
     }
 
+    preventSensitiveResponseCaching(res);
+
     return res.status(200).json({
       success: true,
-      message: "Two-step verification enabled successfully.",
+      message:
+        "Two-step verification enabled successfully.",
       twoFactorEnabled: true,
       recoveryCodes,
     });
@@ -184,7 +230,11 @@ async function confirmTwoFactorSetup(req, res, next, accountType) {
  * This endpoint returns only whether 2FA is enabled.
  * It never returns the encrypted secret or manual key.
  */
-export const parentTwoFactorStatusController = async (req, res, next) => {
+export const parentTwoFactorStatusController = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const parent = req.parent;
 
@@ -195,7 +245,10 @@ export const parentTwoFactorStatusController = async (req, res, next) => {
       });
     }
 
-    const settings = await getTwoFactorSettings("parent", parent.id);
+    const settings = await getTwoFactorSettings(
+      "parent",
+      parent.id,
+    );
 
     if (!settings) {
       return res.status(404).json({
@@ -206,28 +259,71 @@ export const parentTwoFactorStatusController = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      twoFactorEnabled: Boolean(settings.two_factor_enabled),
-      twoFactorEnabledAt: settings.two_factor_enabled_at || null,
+      twoFactorEnabled: Boolean(
+        settings.two_factor_enabled,
+      ),
+      twoFactorEnabledAt:
+        settings.two_factor_enabled_at || null,
+      setupPending: Boolean(
+        !settings.two_factor_enabled &&
+          settings.two_factor_secret_encrypted,
+      ),
     });
   } catch (error) {
     return next(error);
   }
 };
 
-export const parentTwoFactorSetupController = async (req, res, next) => {
-  return startTwoFactorSetup(req, res, next, "parent");
+export const parentTwoFactorSetupController = async (
+  req,
+  res,
+  next,
+) => {
+  return startTwoFactorSetup(
+    req,
+    res,
+    next,
+    "parent",
+  );
 };
 
-export const parentTwoFactorConfirmController = async (req, res, next) => {
-  return confirmTwoFactorSetup(req, res, next, "parent");
+export const parentTwoFactorConfirmController = async (
+  req,
+  res,
+  next,
+) => {
+  return confirmTwoFactorSetup(
+    req,
+    res,
+    next,
+    "parent",
+  );
 };
 
-export const adminTwoFactorSetupController = async (req, res, next) => {
-  return startTwoFactorSetup(req, res, next, "admin");
+export const adminTwoFactorSetupController = async (
+  req,
+  res,
+  next,
+) => {
+  return startTwoFactorSetup(
+    req,
+    res,
+    next,
+    "admin",
+  );
 };
 
-export const adminTwoFactorConfirmController = async (req, res, next) => {
-  return confirmTwoFactorSetup(req, res, next, "admin");
+export const adminTwoFactorConfirmController = async (
+  req,
+  res,
+  next,
+) => {
+  return confirmTwoFactorSetup(
+    req,
+    res,
+    next,
+    "admin",
+  );
 };
 
 export const adminRegenerateRecoveryCodesController = async (
@@ -246,16 +342,23 @@ export const adminRegenerateRecoveryCodesController = async (
     }
 
     const token =
-      typeof req.body?.token === "string" ? req.body.token.trim() : "";
+      typeof req.body?.token === "string"
+        ? req.body.token.trim()
+        : "";
 
     if (!/^\d{6}$/.test(token)) {
       return res.status(400).json({
         success: false,
-        message: "Authenticator code must contain exactly 6 digits.",
+        code: "TWO_FACTOR_INVALID_FORMAT",
+        message:
+          "Authenticator code must contain exactly 6 digits.",
       });
     }
 
-    const settings = await getTwoFactorSettings("admin", admin.id);
+    const settings = await getTwoFactorSettings(
+      "admin",
+      admin.id,
+    );
 
     if (!settings) {
       return res.status(404).json({
@@ -264,7 +367,10 @@ export const adminRegenerateRecoveryCodesController = async (
       });
     }
 
-    if (!settings.two_factor_enabled || !settings.two_factor_secret_encrypted) {
+    if (
+      !settings.two_factor_enabled ||
+      !settings.two_factor_secret_encrypted
+    ) {
       return res.status(400).json({
         success: false,
         code: "TWO_FACTOR_NOT_ENABLED",
@@ -273,34 +379,41 @@ export const adminRegenerateRecoveryCodesController = async (
     }
 
     const verification = await verifyTwoFactorToken({
-      encryptedSecret: settings.two_factor_secret_encrypted,
+      encryptedSecret:
+        settings.two_factor_secret_encrypted,
       token,
-      lastUsedTimeStep: settings.two_factor_last_used_step,
+      lastUsedTimeStep:
+        settings.two_factor_last_used_step,
     });
 
     if (!verification.valid) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or already used authenticator code.",
+        code: "TWO_FACTOR_INVALID_CODE",
+        message:
+          "Invalid or already used authenticator code.",
       });
     }
 
-    const recoveryCodes = generateTwoFactorRecoveryCodes(8);
+    const recoveryCodes =
+      generateTwoFactorRecoveryCodes(8);
 
-    const recoveryCodeHashes = recoveryCodes.map((code) =>
-      hashTwoFactorRecoveryCode({
+    const recoveryCodeHashes =
+      recoveryCodes.map((code) =>
+        hashTwoFactorRecoveryCode({
+          accountType: "admin",
+          accountId: admin.id,
+          code,
+        }),
+      );
+
+    const rotated =
+      await rotateTwoFactorRecoveryCodes({
         accountType: "admin",
         accountId: admin.id,
-        code,
-      }),
-    );
-
-    const rotated = await rotateTwoFactorRecoveryCodes({
-      accountType: "admin",
-      accountId: admin.id,
-      timeStep: verification.timeStep,
-      recoveryCodeHashes,
-    });
+        timeStep: verification.timeStep,
+        recoveryCodeHashes,
+      });
 
     if (!rotated) {
       return res.status(400).json({
@@ -310,9 +423,12 @@ export const adminRegenerateRecoveryCodesController = async (
       });
     }
 
+    preventSensitiveResponseCaching(res);
+
     return res.status(200).json({
       success: true,
-      message: "Recovery codes regenerated successfully.",
+      message:
+        "Recovery codes regenerated successfully.",
       recoveryCodes,
     });
   } catch (error) {
