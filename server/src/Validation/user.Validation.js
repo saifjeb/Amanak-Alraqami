@@ -40,3 +40,20 @@ export const updateUserValidation =
     "object.min":
       "At least one field must be provided",
   });
+
+export const deleteUserValidation =
+  Joi.object({
+    password: Joi.string()
+      .max(72)
+      .required()
+      .messages({
+        "string.empty":
+          "Password is required",
+
+        "string.max":
+          "Password must not exceed 72 characters",
+
+        "any.required":
+          "Password is required",
+      }),
+  });

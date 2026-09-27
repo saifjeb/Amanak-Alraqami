@@ -49,6 +49,31 @@ export const getUserById = async (id) => {
   return result.rows[0] || null;
 };
 
+export const getUserByIdForAuth = async (id) => {
+  const result = await pool.query(
+    `
+        SELECT
+          id,
+          nickname,
+          hashed_password,
+          age_group,
+          avatar,
+          total_points,
+          current_level,
+          created_at,
+          last_login_at,
+          last_active_at,
+          is_enabled
+        FROM users
+        WHERE id = $1
+        LIMIT 1;
+        `,
+    [id],
+  );
+
+  return result.rows[0] || null;
+};
+
 export const getAllUsers = async () => {
   const result = await pool.query(
     `

@@ -4,11 +4,11 @@ import { protect } from "../Middleware/auth.Middleware.js";
 import { protectAdmin } from "../Middleware/adminonly.Middleware.js";
 import { validate } from "../Middleware/validate.Middleware.js";
 import { validateIdParam } from "../Middleware/idParam.Middleware.js";
-import { updateUserValidation } from "../Validation/user.Validation.js";
+import { updateUserValidation, deleteUserValidation } from "../Validation/user.Validation.js";
 
 const route = express.Router();
 route.get("/all-users", protectAdmin, getAllUsersController);
 route.get("/user-id/:id",protectAdmin,validateIdParam("id", "user ID"),getUserByIdController);
 route.put("/me",protect,validate(updateUserValidation),updateMyProfileController);
-route.delete("/me", protect, deleteMyAccountController);
+route.delete("/me", protect, validate(deleteUserValidation), deleteMyAccountController);
 export default route;

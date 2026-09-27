@@ -1,4 +1,5 @@
-import {getAllUsers,getUserById,deleteUser,updateUser} from "../Model/user.Model.js";
+import bcrypt from "bcrypt";
+import {getAllUsers,getUserById,getUserByIdForAuth,deleteUser,updateUser} from "../Model/user.Model.js";
 
 const isProd = process.env.NODE_ENV === "production";
 const cookieOptions = {
@@ -120,7 +121,10 @@ export const updateMyProfileController = async (req, res, next) => {
 export const deleteMyAccountController = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const user = await getUserById(userId);
+    const { password } = req.body;
+
+    const user = await getUserByIdForAuth(userId);
+
     if (!user) {
       clearAuthCookies(res);
       return res.status(404).json({
@@ -129,8 +133,30 @@ export const deleteMyAccountController = async (req, res, next) => {
       });
     }
 
-    await deleteUser(userId);
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user.hashed_password,
+    );
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password",
+      });
+    }
+
+    const deletedUser = await deleteUser(userId);
+
+    if (!deletedUser) {
+      clearAuthCookies(res);
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     clearAuthCookies(res);
+
     return res.status(200).json({
       success: true,
       message: "Account deleted successfully",
