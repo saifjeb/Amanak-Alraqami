@@ -1,20 +1,31 @@
-import path from "path";
-import fs from "fs/promises";
-import { getMediaById } from "../Model/media.Model.js";
-import { MEDIA_DIRECTORY } from "../Utils/media.Utils.js";
+﻿import {
+  getMediaById,
+} from "../Model/media.Model.js";
 
-export const getPublicMediaController = async (req, res, next) => {
+import {
+  readMediaObject,
+} from "../Storage/mediaStorage.js";
+
+export const getPublicMediaController = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const mediaId = Number(req.params.id);
 
-    if (!Number.isInteger(mediaId) || mediaId <= 0) {
+    if (
+      !Number.isInteger(mediaId) ||
+      mediaId <= 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid media ID",
       });
     }
 
-    const media = await getMediaById(mediaId);
+    const media =
+      await getMediaById(mediaId);
 
     if (!media || media.deleted_at) {
       return res.status(404).json({
@@ -23,28 +34,39 @@ export const getPublicMediaController = async (req, res, next) => {
       });
     }
 
-    const safeStoredName = path.basename(media.stored_name);
+    const mediaBuffer =
+      await readMediaObject(
+        media.stored_name,
+      );
 
-    const absolutePath = path.join(MEDIA_DIRECTORY, safeStoredName);
-
-    try {
-      await fs.access(absolutePath);
-    } catch {
+    if (!mediaBuffer) {
       return res.status(404).json({
         success: false,
         message: "Media file not found",
       });
     }
 
-    res.setHeader("Content-Type", media.mime_type);
+    res.setHeader(
+      "Content-Type",
+      media.mime_type,
+    );
 
-    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader(
+      "Cache-Control",
+      "public, max-age=86400",
+    );
 
-    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    res.setHeader(
+      "Cross-Origin-Resource-Policy",
+      "cross-origin",
+    );
 
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+      "Access-Control-Allow-Origin",
+      "*",
+    );
 
-    return res.sendFile(absolutePath);
+    return res.send(mediaBuffer);
   } catch (error) {
     return next(error);
   }

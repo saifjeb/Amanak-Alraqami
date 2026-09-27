@@ -16,6 +16,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.3.0",
     "cookie-parser": "^1.4.7",
