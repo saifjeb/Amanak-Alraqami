@@ -109,3 +109,54 @@ export const getParentByIdForAuth = async (id) => {
 
   return result.rows[0] || null;
 };
+
+export const deleteParentAccount = async (id) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    await client.query(
+      `
+      DELETE FROM password_reset_tokens
+      WHERE account_type = 'parent'
+        AND account_id = $1;
+      `,
+      [id],
+    );
+
+    await client.query(
+      `
+      DELETE FROM two_factor_recovery_codes
+      WHERE account_type = 'parent'
+        AND account_id = $1;
+      `,
+      [id],
+    );
+
+    const result = await client.query(
+      `
+      DELETE FROM parents
+      WHERE id = $1
+      RETURNING id;
+      `,
+      [id],
+    );
+
+    const deletedParent = result.rows[0] || null;
+
+    if (!deletedParent) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    await client.query("COMMIT");
+
+    return deletedParent;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};

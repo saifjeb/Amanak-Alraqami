@@ -8,6 +8,7 @@ import {
   getParentByIdForAuth,
   saveParentRefreshToken,
   clearParentRefreshToken,
+  deleteParentAccount,
 } from "../Model/parents.Models.js";
 
 import {
@@ -424,6 +425,64 @@ export async function parentMeController(req, res) {
     });
   } catch (error) {
     console.error("Parent me error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+}
+
+export async function parentDeleteAccountController(req, res) {
+  try {
+    const parentId = req.parent.id;
+    const { password } = req.body;
+
+    const parent = await getParentByIdForAuth(parentId);
+
+    if (!parent) {
+      clearParentAuthCookies(res);
+      clearParentTwoFactorChallenge(res);
+
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
+    }
+
+    const passwordMatch = await bcrypt.compare(
+      password,
+      parent.hashed_password,
+    );
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password",
+      });
+    }
+
+    const deletedParent = await deleteParentAccount(parentId);
+
+    if (!deletedParent) {
+      clearParentAuthCookies(res);
+      clearParentTwoFactorChallenge(res);
+
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
+    }
+
+    clearParentAuthCookies(res);
+    clearParentTwoFactorChallenge(res);
+
+    return res.status(200).json({
+      success: true,
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.error("Parent account deletion error:", error);
 
     return res.status(500).json({
       success: false,
