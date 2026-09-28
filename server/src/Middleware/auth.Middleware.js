@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { getUserById, updateUserLastActive } from "../Model/user.Model.js";
+import { logger, serializeError } from "../Utils/logger.js";
 
 const isProd = process.env.NODE_ENV === "production";
 const clearAuthCookies = (res) => {
@@ -79,7 +80,10 @@ export const protect = async (req, res, next) => {
 
     return next();
   } catch (error) {
-    console.error("Protect middleware error:", error);
+    logger.error("auth.child_protect_error", {
+      request_id: req.requestId || null,
+      error: serializeError(error),
+    });
 
     return res.status(500).json({
       success: false,

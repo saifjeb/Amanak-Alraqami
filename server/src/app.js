@@ -4,6 +4,8 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import multer from "multer";
+import { logger, serializeError } from "./Utils/logger.js";
+import { requestLogging } from "./Middleware/requestLogging.Middleware.js";
 
 import authRoutes from "./Routes/auth.Routes.js";
 import parentRoutes from "./Routes/parents.Routes.js";
@@ -31,6 +33,8 @@ try {
 if (isProd) {
   app.set("trust proxy", 1);
 }
+
+app.use(requestLogging);
 
 app.use(helmet());
 
@@ -102,10 +106,6 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   if (res.headersSent) {
     return next(err);
-  }
-
-  if (!isTest) {
-    console.error("Unhandled error:", err);
   }
 
   if (err.type === "entity.parse.failed") {
@@ -200,6 +200,13 @@ app.use((err, req, res, next) => {
       message: "Request failed",
     });
   }
+
+  logger.error("http.unhandled_error", {
+    request_id: req.requestId || null,
+    method: req.method,
+    path: (req.originalUrl || req.url || "/").split("?")[0],
+    error: serializeError(err),
+  });
 
   return res.status(500).json({
     success: false,

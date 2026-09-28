@@ -1,3 +1,4 @@
+import { logger, serializeError } from "../Utils/logger.js";
 import pool from "../config/db.js";
 
 export const recordQuestionAttempt = async ({
@@ -118,10 +119,9 @@ export const recordQuestionAttempt = async ({
   } catch (error) {
     await client.query("ROLLBACK");
 
-    console.error(
-      "Record question attempt error:",
-      error
-    );
+    logger.error("question_attempt.record_error", {
+      error: serializeError(error),
+    });
 
     throw error;
 

@@ -1,4 +1,5 @@
 import { createAdminAuditLog } from "../Model/adminAudit.Model.js";
+import { logger, serializeError } from "../Utils/logger.js";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -208,7 +209,10 @@ export const auditAdminAction = (req, res, next) => {
         duration_ms: Date.now() - startedAt,
       },
     }).catch((error) => {
-      console.error("Admin audit log error:", error.message);
+      logger.error("admin.audit_write_error", {
+        request_id: req.requestId || null,
+        error: serializeError(error),
+      });
     });
   });
 

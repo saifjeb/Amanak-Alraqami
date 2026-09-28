@@ -1,4 +1,5 @@
-﻿import path from "node:path";
+import { logger, serializeError } from "../Utils/logger.js";
+import path from "node:path";
 
 import {
   createMedia,
@@ -100,10 +101,10 @@ export const adminUploadMediaController = async (req, res, next) => {
       try {
         await deleteMediaObject(storedName);
       } catch (cleanupError) {
-        console.error(
-          "Media cleanup error:",
-          cleanupError,
-        );
+        logger.error("media.cleanup_error", {
+          request_id: req.requestId || null,
+          error: serializeError(cleanupError),
+        });
       }
     }
 

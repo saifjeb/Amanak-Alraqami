@@ -1,3 +1,4 @@
+import { logger, serializeError } from "../Utils/logger.js";
 import bcrypt from "bcrypt";
 
 import { getAdminByEmail } from "../Model/admin.Model.js";
@@ -145,7 +146,11 @@ const processNewPassword = async ({ req, res, accountType }) => {
       message: "Password reset successfully.",
     });
   } catch (error) {
-    console.error(`${accountType} reset password error:`, error);
+    logger.error("auth.password_reset_error", {
+      account_type: accountType,
+      request_id: req.requestId || null,
+      error: serializeError(error),
+    });
 
     return res.status(500).json({
       success: false,
@@ -168,7 +173,10 @@ export const parentForgotPasswordController = async (req, res) => {
     email,
     accountType: "parent",
   }).catch((error) => {
-    console.error("Parent forgot password error:", error);
+    logger.error("auth.parent_forgot_password_error", {
+      request_id: req.requestId || null,
+      error: serializeError(error),
+    });
   });
 
   return res.status(200).json({
@@ -191,7 +199,10 @@ export const adminForgotPasswordController = async (req, res) => {
     email,
     accountType: "admin",
   }).catch((error) => {
-    console.error("Admin forgot password error:", error);
+    logger.error("auth.admin_forgot_password_error", {
+      request_id: req.requestId || null,
+      error: serializeError(error),
+    });
   });
 
   return res.status(200).json({

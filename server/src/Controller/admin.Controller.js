@@ -1,3 +1,4 @@
+import { logger, serializeError } from "../Utils/logger.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -71,7 +72,10 @@ const writeLoginAudit = async ({
       metadata,
     });
   } catch (error) {
-    console.error("Admin login audit error:", error);
+    logger.error("admin.login_audit_error", {
+      request_id: req.requestId || null,
+      error: serializeError(error),
+    });
   }
 };
 

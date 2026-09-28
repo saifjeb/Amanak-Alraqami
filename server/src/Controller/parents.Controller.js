@@ -1,3 +1,4 @@
+import { logger, serializeError } from "../Utils/logger.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -108,7 +109,10 @@ export async function parentRegisterController(req, res) {
     const parent = await registerParent(name, email, hashed_password);
 
     createAndSendParentVerificationCode(parent).catch((emailError) => {
-      console.error("Parent verification email error:", emailError);
+            logger.error("parent.verification_email_error", {
+              request_id: req.requestId || null,
+              error: serializeError(emailError),
+            });
     });
 
     return res.status(201).json({
@@ -125,7 +129,10 @@ export async function parentRegisterController(req, res) {
       });
     }
 
-    console.error("Parent register error:", error);
+        logger.error("parent.register_error", {
+          request_id: req.requestId || null,
+          error: serializeError(error),
+        });
 
     return res.status(500).json({
       success: false,
@@ -196,7 +203,10 @@ export async function parentLoginController(req, res) {
       parent: publicParent(parent),
     });
   } catch (error) {
-    console.error("Parent login error:", error);
+        logger.error("parent.login_error", {
+          request_id: req.requestId || null,
+          error: serializeError(error),
+        });
 
     return res.status(500).json({
       success: false,
@@ -358,7 +368,10 @@ export async function parentTwoFactorChallengeController(req, res) {
       parent: publicParent(parent),
     });
   } catch (error) {
-    console.error("Parent 2FA challenge error:", error);
+        logger.error("parent.2fa_challenge_error", {
+          request_id: req.requestId || null,
+          error: serializeError(error),
+        });
 
     return res.status(500).json({
       success: false,
@@ -382,7 +395,10 @@ export async function parentLogoutController(req, res) {
       }
     }
   } catch (error) {
-    console.error("Parent logout error:", error);
+        logger.error("parent.logout_error", {
+          request_id: req.requestId || null,
+          error: serializeError(error),
+        });
   }
 
   clearParentAuthCookies(res);
@@ -424,7 +440,10 @@ export async function parentMeController(req, res) {
       parent: publicParent(parent),
     });
   } catch (error) {
-    console.error("Parent me error:", error);
+        logger.error("parent.me_error", {
+          request_id: req.requestId || null,
+          error: serializeError(error),
+        });
 
     return res.status(500).json({
       success: false,
@@ -482,7 +501,10 @@ export async function parentDeleteAccountController(req, res) {
       message: "Account deleted successfully",
     });
   } catch (error) {
-    console.error("Parent account deletion error:", error);
+        logger.error("parent.account_delete_error", {
+          request_id: req.requestId || null,
+          error: serializeError(error),
+        });
 
     return res.status(500).json({
       success: false,
@@ -549,7 +571,10 @@ export async function parentRefreshController(req, res) {
       message: "Access token refreshed successfully",
     });
   } catch (error) {
-    console.error("Parent refresh error:", error);
+        logger.warn("parent.refresh_rejected", {
+          request_id: req.requestId || null,
+          error: serializeError(error),
+        });
 
     return res.status(401).json({
       success: false,

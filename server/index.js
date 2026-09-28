@@ -1,38 +1,37 @@
 import "dotenv/config";
 import app from "./src/app.js";
 import pool from "./src/config/db.js";
+import { logger, serializeError } from "./src/Utils/logger.js";
 
-const isProd = process.env.NODE_ENV === "production";
 const rawPort = process.env.PORT;
 const PORT = rawPort === undefined ? 3000 : Number(rawPort);
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
-  console.error("Server configuration error: invalid PORT");
+  logger.error("server.invalid_port", { configured_port: rawPort ?? null });
   process.exit(1);
 }
 
 let isShuttingDown = false;
-const logFatalError = (label, error) => {
-  if (isProd) {
-    console.error(label, {
-      name: error?.name || "Error",
-      code: error?.code || null,
-    });
-
-    return;
-  }
-  console.error(label, error);
+const logFatalError = (
+  event,
+  error,
+  fields = {},
+) => {
+  logger.error(event, {
+    ...fields,
+    error: serializeError(error),
+  });
 };
 
 const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info("server.started", { port: PORT });
 });
 
 server.on("error", async (error) => {
-  logFatalError("Server failed to start:", error);
+  logFatalError("server.start_error", error);
   try {
     await pool.end();
   } catch (databaseError) {
-    logFatalError("Database shutdown error:", databaseError);
+    logFatalError("database.shutdown_error", databaseError);
   }
 
   process.exit(1);
@@ -44,29 +43,29 @@ const shutdown = (signal, exitCode = 0) => {
   }
 
   isShuttingDown = true;
-  console.log(`${signal} received. Shutting down safely...`);
+  logger.info("server.shutdown_started", { signal });
   const forceShutdown = setTimeout(() => {
-    console.error("Forced shutdown after timeout");
+    logger.error("server.shutdown_forced", { timeout_ms: 10000 });
     process.exit(1);
   }, 10000);
 
   forceShutdown.unref();
   server.close(async (serverError) => {
     if (serverError) {
-      logFatalError("Server shutdown error:", serverError);
+      logFatalError("server.shutdown_error", serverError);
     }
 
     try {
       await pool.end();
     } catch (databaseError) {
-      logFatalError("Database shutdown error:", databaseError);
+      logFatalError("database.shutdown_error", databaseError);
       clearTimeout(forceShutdown);
       process.exit(1);
       return;
     }
 
     clearTimeout(forceShutdown);
-    console.log("Server shutdown complete");
+    logger.info("server.shutdown_complete", { signal });
     process.exit(serverError ? 1 : exitCode);
   });
 };
@@ -79,12 +78,12 @@ process.on("SIGINT", () => {
 });
 
 process.on("unhandledRejection", (reason) => {
-  logFatalError("Unhandled promise rejection:", reason);
+  logFatalError("process.unhandled_rejection", reason);
   shutdown("UNHANDLED_REJECTION", 1);
 });
 
 process.on("uncaughtException", (error) => {
-  logFatalError("Uncaught exception:", error);
+  logFatalError("process.uncaught_exception", error);
   shutdown("UNCAUGHT_EXCEPTION", 1);
 });
 

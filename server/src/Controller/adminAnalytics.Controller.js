@@ -1,3 +1,4 @@
+import { logger, serializeError } from "../Utils/logger.js";
 import { getAdminAnalytics } from "../Model/adminAnalytics.Model.js";
 
 export const getAdminAnalyticsController = async (req, res) => {
@@ -11,7 +12,9 @@ export const getAdminAnalyticsController = async (req, res) => {
       analytics,
     });
   } catch (error) {
-    console.error("Admin analytics error:", error);
+    logger.error("admin.analytics_error", {
+      error: serializeError(error),
+    });
 
     return res.status(500).json({
       success: false,

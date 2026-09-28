@@ -1,3 +1,4 @@
+import { logger, serializeError } from "../Utils/logger.js";
 import pool from "../config/db.js";
 
 export const createLinkCode = async (parentId, code) => {
@@ -57,7 +58,9 @@ export const useLinkCode = async (code, childId) => {
   } catch (error) {
     await client.query("ROLLBACK");
 
-    console.error("Use link code model error:", error);
+    logger.error("parent_link.use_error", {
+      error: serializeError(error),
+    });
 
     throw error;
   } finally {

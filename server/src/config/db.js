@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { logger, serializeError } from "../Utils/logger.js";
 
 const connectionString = process.env.CONNECTION_STRING;
 if (!connectionString) {
@@ -38,12 +39,9 @@ const pool = new Pool({
 });
 
 pool.on("error", (error) => {
-  if (process.env.NODE_ENV !== "test") {
-    console.error("Unexpected PostgreSQL pool error:", {
-      name: error?.name || "Error",
-      code: error?.code || null,
-    });
-  }
+  logger.error("database.pool_error", {
+    error: serializeError(error),
+  });
 });
 
 export default pool;
