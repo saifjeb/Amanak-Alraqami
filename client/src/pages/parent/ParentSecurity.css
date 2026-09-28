@@ -412,3 +412,123 @@
     grid-template-columns: 1fr;
   }
 }
+.parent-delete-account-card {
+  border-color: #edcccc;
+}
+
+.parent-delete-icon {
+  background: #fff0f0;
+  color: #a92f2f;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.parent-delete-info-link {
+  display: inline-block;
+  margin: 8px 0 16px;
+  color: #315fad;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.parent-delete-info-link:hover,
+.parent-delete-info-link:focus-visible {
+  text-decoration: underline;
+}
+
+.parent-delete-toggle {
+  padding: 12px 18px;
+  border: 1px solid #e2a7a7;
+  border-radius: 12px;
+  background: #fff8f8;
+  color: #a92f2f;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.parent-delete-form {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid #f0caca;
+  border-radius: 16px;
+  background: #fffafa;
+}
+
+.parent-delete-form strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #8e2929;
+}
+
+.parent-delete-form p {
+  margin: 0;
+  color: #6d5555;
+  line-height: 1.6;
+}
+
+.parent-delete-form label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 700;
+}
+
+.parent-delete-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid #d9dee8;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.parent-delete-error {
+  margin-top: 10px;
+  color: #a92f2f;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.parent-delete-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.parent-delete-actions button {
+  padding: 11px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.parent-delete-cancel {
+  border: 1px solid #d7dce5;
+  background: #fff;
+  color: #46536a;
+}
+
+.parent-delete-confirm {
+  border: 0;
+  background: #a92f2f;
+  color: #fff;
+}
+
+.parent-delete-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 600px) {
+  .parent-delete-actions {
+    flex-direction: column;
+  }
+
+  .parent-delete-actions button {
+    width: 100%;
+  }
+
+  .parent-delete-form {
+    padding: 15px;
+  }
+}

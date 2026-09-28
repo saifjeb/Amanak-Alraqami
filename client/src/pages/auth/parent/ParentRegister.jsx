@@ -25,7 +25,7 @@ function ParentRegister() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [error, setError] = useState("");
@@ -82,6 +82,16 @@ function ParentRegister() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!acceptedPolicies) {
+      setError(
+        pick(
+          "يرجى قراءة إشعار الخصوصية وشروط الاستخدام والإقرار بالاطلاع عليها.",
+          "Please review and acknowledge the Privacy Notice and Terms of Use.",
+        ),
+      );
+      return;
+    }
 
     const message = validateForm();
 
@@ -270,6 +280,78 @@ function ParentRegister() {
               {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
+        </div>
+
+        <div className="auth-policy-check">
+
+          <input
+
+            id="parent-policy-acknowledgment"
+
+            type="checkbox"
+
+            checked={acceptedPolicies}
+
+            onChange={(event) => {
+
+              setAcceptedPolicies(event.target.checked);
+
+              setError("");
+
+            }}
+
+            disabled={submitting}
+
+          />
+
+
+          <div>
+
+            <label htmlFor="parent-policy-acknowledgment">
+
+              {pick(
+
+                "أقر بأنني قرأت معلومات الخصوصية وشروط استخدام أمانك الرقمي.",
+
+                "I acknowledge that I have read Amanak Alraqami's privacy information and Terms of Use.",
+
+              )}
+
+            </label>
+
+
+            <div className="auth-policy-links">
+
+              <Link to="/privacy" target="_blank">
+
+                {pick("إشعار الخصوصية", "Privacy Notice")}
+
+              </Link>
+
+
+              <span>·</span>
+
+
+              <Link to="/child-privacy" target="_blank">
+
+                {pick("خصوصية الطفل", "Child Privacy")}
+
+              </Link>
+
+
+              <span>·</span>
+
+
+              <Link to="/terms" target="_blank">
+
+                {pick("شروط الاستخدام", "Terms of Use")}
+
+              </Link>
+
+            </div>
+
+          </div>
+
         </div>
 
         {error && <div className="auth-error">⚠️ {error}</div>}

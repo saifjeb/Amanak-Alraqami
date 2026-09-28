@@ -246,7 +246,29 @@ function LandingPage() {
         <div className="footer-column"><strong>{t.schoolLinks}</strong><a href="#schools">{t.schoolsTitle}</a><a href="#adventures">{t.resources}</a></div>
         <div className="footer-social"><strong>{t.follow}</strong><div><span>عربي</span><span>EN</span></div><small>{t.jordan} 🇯🇴</small></div>
       </footer>
-      <div className="landing-legal"><span>© 2026 Amanak Alraqami</span><span>{isArabic ? "الخصوصية · شروط الاستخدام" : "Privacy · Terms of Use"}</span><Link to="/admin/login">Admin</Link></div>
+      <div className="landing-legal"><span>© 2026 Amanak Alraqami</span><span className="landing-legal-links">
+          <Link to="/privacy">
+            {isArabic ? "الخصوصية" : "Privacy"}
+          </Link>
+
+          <span aria-hidden="true">·</span>
+
+          <Link to="/child-privacy">
+            {isArabic ? "خصوصية الطفل" : "Child Privacy"}
+          </Link>
+
+          <span aria-hidden="true">·</span>
+
+          <Link to="/terms">
+            {isArabic ? "شروط الاستخدام" : "Terms of Use"}
+          </Link>
+
+          <span aria-hidden="true">·</span>
+
+          <Link to="/account-deletion">
+            {isArabic ? "حذف الحساب" : "Account Deletion"}
+          </Link>
+        </span><Link to="/admin/login">Admin</Link></div>
     </main>
   );
 }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,6 +14,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.js";
+import { api } from "../../api/api.js";
 import { useLanguage } from "../../i18n/useLanguage.js";
 import ChildNav from "../../components/child/ChildNav.jsx";
 import AvatarPortrait from "../../components/common/AvatarPortrait.jsx";
@@ -27,8 +29,12 @@ const avatarInfo = {
 
 function Profile() {
   const navigate = useNavigate();
-  const { user, childLogout } = useAuth();
+  const { user, childLogout, clearSession } = useAuth();
   const { isArabic, pick } = useLanguage();
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const avatar = avatarInfo[user?.avatar] || avatarInfo.avatar1;
   const points = Number(user?.total_points) || 0;
@@ -74,6 +80,71 @@ function Profile() {
     },
   ];
 
+  async function handleDeleteAccount(event) {
+    event.preventDefault();
+
+    if (!deletePassword) {
+      setDeleteError(
+        pick(
+          "أدخل كلمة المرور لتأكيد حذف الحساب.",
+          "Enter your password to confirm account deletion.",
+        ),
+      );
+
+      return;
+    }
+
+    try {
+      setDeletingAccount(true);
+      setDeleteError("");
+
+      await api.delete("/users/me", {
+        data: {
+          password: deletePassword,
+        },
+      });
+
+      clearSession();
+
+      navigate("/", {
+        replace: true,
+      });
+    } catch (err) {
+      if (
+        err.response?.status === 401 &&
+        err.response?.data?.message === "Invalid password"
+      ) {
+        setDeleteError(
+          pick(
+            "كلمة المرور غير صحيحة.",
+            "The password is incorrect.",
+          ),
+        );
+
+        return;
+      }
+
+      if (err.response?.status === 401) {
+        clearSession();
+
+        navigate("/child/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      setDeleteError(
+        err.response?.data?.message ||
+          pick(
+            "تعذر حذف الحساب. حاول مرة أخرى.",
+            "Could not delete the account. Please try again.",
+          ),
+      );
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
   return (
     <main className="child-profile-page" data-no-auto-translate="true">
       <ChildNav />
@@ -231,11 +302,126 @@ function Profile() {
           </div>
         </section>
 
-        <section className="profile-logout-section">
-          <button type="button" onClick={handleLogout}>
-            <LogOut size={17} />
-            {pick("تسجيل الخروج", "Logout")}
-          </button>
+        <section className="profile-account-actions">
+          <div className="profile-account-links">
+            <Link to="/child-privacy">
+              {pick("خصوصيتي", "My Privacy")}
+            </Link>
+
+            <Link to="/account-deletion">
+              {pick(
+                "معلومات حذف الحساب",
+                "Account Deletion Info",
+              )}
+            </Link>
+          </div>
+
+          <div className="profile-logout-section">
+            <button
+              type="button"
+              onClick={handleLogout}
+            >
+              <LogOut size={17} />
+              {pick("تسجيل الخروج", "Logout")}
+            </button>
+          </div>
+
+          <div className="profile-delete-account">
+            <button
+              type="button"
+              className="profile-delete-toggle"
+              onClick={() => {
+                setShowDeleteAccount(
+                  (value) => !value,
+                );
+
+                setDeletePassword("");
+                setDeleteError("");
+              }}
+            >
+              {showDeleteAccount
+                ? pick(
+                    "إلغاء حذف الحساب",
+                    "Cancel Account Deletion",
+                  )
+                : pick(
+                    "حذف حسابي",
+                    "Delete My Account",
+                  )}
+            </button>
+
+            {showDeleteAccount && (
+              <form
+                className="profile-delete-form"
+                onSubmit={handleDeleteAccount}
+              >
+                <strong>
+                  {pick(
+                    "حذف الحساب نهائي",
+                    "Account deletion is permanent",
+                  )}
+                </strong>
+
+                <p>
+                  {pick(
+                    "سيتم حذف تقدمك ونتائجك ونقاطك وشاراتك وروابط حسابك مع أولياء الأمور. إذا لم تكن متأكداً، تحدث مع ولي أمر أو شخص بالغ تثق به.",
+                    "Your progress, results, points, badges and parent links will be removed. If you are unsure, talk to a parent or trusted adult.",
+                  )}
+                </p>
+
+                <label htmlFor="child-delete-password">
+                  {pick(
+                    "أدخل كلمة المرور للتأكيد",
+                    "Enter your password to confirm",
+                  )}
+                </label>
+
+                <input
+                  id="child-delete-password"
+                  type="password"
+                  value={deletePassword}
+                  onChange={(event) => {
+                    setDeletePassword(
+                      event.target.value,
+                    );
+
+                    setDeleteError("");
+                  }}
+                  autoComplete="current-password"
+                  maxLength={72}
+                  disabled={deletingAccount}
+                />
+
+                {deleteError && (
+                  <div
+                    className="profile-delete-error"
+                    role="alert"
+                  >
+                    {deleteError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="profile-delete-confirm"
+                  disabled={
+                    deletingAccount ||
+                    !deletePassword
+                  }
+                >
+                  {deletingAccount
+                    ? pick(
+                        "جارٍ حذف الحساب...",
+                        "Deleting account...",
+                      )
+                    : pick(
+                        "تأكيد حذف الحساب",
+                        "Confirm Account Deletion",
+                      )}
+                </button>
+              </form>
+            )}
+          </div>
         </section>
       </div>
     </main>

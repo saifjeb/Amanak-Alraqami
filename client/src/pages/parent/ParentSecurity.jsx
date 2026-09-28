@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, KeyRound, LockKeyhole, ShieldCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import { api } from "../../api/api.js";
+import { useAuth } from "../../hooks/useAuth.js";
 import { useLanguage } from "../../i18n/useLanguage.js";
 import ParentNav from "../../components/parent/ParentNav.jsx";
 import "./ParentSecurity.css";
 
 function ParentSecurity() {
   const navigate = useNavigate();
+  const { clearSession } = useAuth();
   const { pick } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -22,6 +24,10 @@ function ParentSecurity() {
   const [copied, setCopied] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -229,6 +235,71 @@ function ParentSecurity() {
     await copyText(recoveryCodes.join("\n"), "recovery");
   }
 
+  async function handleDeleteParentAccount(event) {
+    event.preventDefault();
+
+    if (!deleteAccountPassword) {
+      setDeleteAccountError(
+        pick(
+          "أدخل كلمة المرور لتأكيد حذف الحساب.",
+          "Enter your password to confirm account deletion.",
+        ),
+      );
+
+      return;
+    }
+
+    try {
+      setDeletingAccount(true);
+      setDeleteAccountError("");
+
+      await api.delete("/parent/me", {
+        data: {
+          password: deleteAccountPassword,
+        },
+      });
+
+      clearSession();
+
+      navigate("/", {
+        replace: true,
+      });
+    } catch (err) {
+      if (
+        err.response?.status === 401 &&
+        err.response?.data?.message === "Invalid password"
+      ) {
+        setDeleteAccountError(
+          pick(
+            "كلمة المرور غير صحيحة.",
+            "The password is incorrect.",
+          ),
+        );
+
+        return;
+      }
+
+      if (err.response?.status === 401) {
+        clearSession();
+
+        navigate("/parent/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      setDeleteAccountError(
+        err.response?.data?.message ||
+          pick(
+            "تعذر حذف الحساب. حاول مرة أخرى.",
+            "Could not delete the account. Please try again.",
+          ),
+      );
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
   if (loading) {
     return (
       <main className="parent-security-page" data-no-auto-translate="true">
@@ -567,6 +638,151 @@ function ParentSecurity() {
             </button>
           </section>
         )}
+        <section className="parent-security-card parent-delete-account-card">
+          <div className="parent-security-card-header">
+            <div className="parent-security-icon parent-delete-icon">
+              !
+            </div>
+
+            <div>
+              <span>
+                {pick(
+                  "إدارة الحساب",
+                  "ACCOUNT MANAGEMENT",
+                )}
+              </span>
+
+              <h2>
+                {pick(
+                  "حذف حساب ولي الأمر",
+                  "Delete Parent Account",
+                )}
+              </h2>
+
+              <p>
+                {pick(
+                  "حذف حساب ولي الأمر لا يحذف حسابات الأطفال المرتبطة، لكنه يزيل روابط الحساب وبيانات أمان ولي الأمر.",
+                  "Deleting the parent account does not delete linked child accounts, but it removes the parent account, its links and parent security data.",
+                )}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            to="/account-deletion"
+            className="parent-delete-info-link"
+          >
+            {pick(
+              "اقرأ تفاصيل حذف الحساب",
+              "Read account deletion details",
+            )}
+          </Link>
+
+          {!showDeleteAccount ? (
+            <button
+              type="button"
+              className="parent-delete-toggle"
+              onClick={() => {
+                setShowDeleteAccount(true);
+                setDeleteAccountError("");
+                setDeleteAccountPassword("");
+              }}
+            >
+              {pick(
+                "حذف حسابي",
+                "Delete My Account",
+              )}
+            </button>
+          ) : (
+            <form
+              className="parent-delete-form"
+              onSubmit={handleDeleteParentAccount}
+            >
+              <strong>
+                {pick(
+                  "هذا الإجراء نهائي.",
+                  "This action is permanent.",
+                )}
+              </strong>
+
+              <p>
+                {pick(
+                  "أدخل كلمة مرور حساب ولي الأمر لتأكيد الحذف.",
+                  "Enter your parent-account password to confirm deletion.",
+                )}
+              </p>
+
+              <label htmlFor="parent-delete-password">
+                {pick(
+                  "كلمة المرور",
+                  "Password",
+                )}
+              </label>
+
+              <input
+                id="parent-delete-password"
+                type="password"
+                value={deleteAccountPassword}
+                onChange={(event) => {
+                  setDeleteAccountPassword(
+                    event.target.value,
+                  );
+
+                  setDeleteAccountError("");
+                }}
+                autoComplete="current-password"
+                maxLength={72}
+                disabled={deletingAccount}
+              />
+
+              {deleteAccountError && (
+                <div
+                  className="parent-delete-error"
+                  role="alert"
+                >
+                  {deleteAccountError}
+                </div>
+              )}
+
+              <div className="parent-delete-actions">
+                <button
+                  type="button"
+                  className="parent-delete-cancel"
+                  onClick={() => {
+                    setShowDeleteAccount(false);
+                    setDeleteAccountPassword("");
+                    setDeleteAccountError("");
+                  }}
+                  disabled={deletingAccount}
+                >
+                  {pick(
+                    "إلغاء",
+                    "Cancel",
+                  )}
+                </button>
+
+                <button
+                  type="submit"
+                  className="parent-delete-confirm"
+                  disabled={
+                    deletingAccount ||
+                    !deleteAccountPassword
+                  }
+                >
+                  {deletingAccount
+                    ? pick(
+                        "جارٍ حذف الحساب...",
+                        "Deleting account...",
+                      )
+                    : pick(
+                        "تأكيد حذف الحساب",
+                        "Confirm Account Deletion",
+                      )}
+                </button>
+              </div>
+            </form>
+          )}
+        </section>
       </div>
     </main>
   );

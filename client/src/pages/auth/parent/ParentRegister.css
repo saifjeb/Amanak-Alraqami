@@ -1,0 +1,43 @@
+
+.auth-policy-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #dde4ef;
+  border-radius: 14px;
+  background: #f8faff;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.auth-policy-check input {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.auth-policy-check label {
+  color: #49566d;
+  cursor: pointer;
+}
+
+.auth-policy-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.auth-policy-links a {
+  color: #245fd6;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-policy-links a:hover,
+.auth-policy-links a:focus-visible {
+  text-decoration: underline;
+}

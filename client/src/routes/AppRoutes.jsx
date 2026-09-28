@@ -40,6 +40,8 @@ import AdminAnalytics from "../pages/admin/AdminAnalytics.jsx";
 import AdminSecurity from "../pages/admin/AdminSecurity.jsx";
 import AdminSettings from "../pages/admin/AdminSettings.jsx";
 
+import LegalPage from "../pages/legal/LegalPage.jsx";
+
 import ProtectedRoute from "../components/common/ProtectedRoute.jsx";
 
 import NotFound from "../pages/NotFound.jsx";
@@ -48,6 +50,17 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+
+      <Route path="/privacy" element={<LegalPage page="privacy" />} />
+      <Route path="/terms" element={<LegalPage page="terms" />} />
+      <Route
+        path="/child-privacy"
+        element={<LegalPage page="childPrivacy" />}
+      />
+      <Route
+        path="/account-deletion"
+        element={<LegalPage page="accountDeletion" />}
+      />
 
       {/* Child authentication */}
       <Route path="/child/login" element={<ChildLogin />} />
