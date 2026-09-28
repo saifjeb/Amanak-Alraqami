@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 
 import {
   adminLoginController,
@@ -13,6 +13,7 @@ import {
 } from "../Controller/passwordReset.Controller.js";
 
 import {
+  adminTwoFactorStatusController,
   adminTwoFactorSetupController,
   adminTwoFactorConfirmController,
   adminRegenerateRecoveryCodesController,
@@ -131,6 +132,12 @@ router.use(auditAdminAction);
 router.get("/me", protectAdmin, adminMeController);
 
 router.post("/logout", protectAdmin, adminLogoutController);
+
+router.get(
+  "/2fa/status",
+  protectAdmin,
+  adminTwoFactorStatusController,
+);
 
 router.post(
   "/2fa/setup",

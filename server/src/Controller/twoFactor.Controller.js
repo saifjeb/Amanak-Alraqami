@@ -300,6 +300,56 @@ export const parentTwoFactorConfirmController = async (
   );
 };
 
+/**
+ * Admin 2FA status
+ *
+ * Important:
+ * This endpoint returns only safe status information.
+ * It never returns the encrypted secret or manual key.
+ */
+export const adminTwoFactorStatusController = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const admin = req.admin;
+
+    if (!admin?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const settings = await getTwoFactorSettings(
+      "admin",
+      admin.id,
+    );
+
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin account not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      twoFactorEnabled: Boolean(
+        settings.two_factor_enabled,
+      ),
+      twoFactorEnabledAt:
+        settings.two_factor_enabled_at || null,
+      setupPending: Boolean(
+        !settings.two_factor_enabled &&
+          settings.two_factor_secret_encrypted,
+      ),
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
 export const adminTwoFactorSetupController = async (
   req,
   res,
