@@ -78,6 +78,41 @@ app.use(
 
 app.use(cookieParser());
 
+const authCookieNames = [
+  "accessToken",
+  "refreshToken",
+  "parentAccessToken",
+  "parentRefreshToken",
+  "parentTwoFactorChallenge",
+  "adminAccessToken",
+  "adminTwoFactorChallenge",
+];
+
+app.use("/api", (req, res, next) => {
+  const hasAuthCookie = authCookieNames.some(
+    (name) => Boolean(req.cookies?.[name]),
+  );
+
+  const sensitiveAuthPath =
+    req.path === "/auth" ||
+    req.path.startsWith("/auth/") ||
+    req.path === "/parent" ||
+    req.path.startsWith("/parent/") ||
+    req.path === "/admin" ||
+    req.path.startsWith("/admin/");
+
+  if (hasAuthCookie || sensitiveAuthPath) {
+    res.set({
+      "Cache-Control": "private, no-store, no-cache, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+      "Surrogate-Control": "no-store",
+    });
+  }
+
+  return next();
+});
+
 app.get("/health", (req, res) => {
   return res.status(200).json({
     success: true,
