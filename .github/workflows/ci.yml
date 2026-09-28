@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18
+
+        env:
+          POSTGRES_DB: amanak_alraqami_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd="pg_isready -U postgres -d amanak_alraqami_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      NODE_ENV: test
+      PORT: 3000
+
+      CONNECTION_STRING: postgresql://postgres:postgres@127.0.0.1:5432/amanak_alraqami_test
+
+      CLIENT_URL: http://localhost:5173
+      COOKIE_SAME_SITE: lax
+
+      SALT_ROUNDS: 10
+
+      JWT_SECRET: ci_only_child_access_secret_0123456789abcdef0123456789
+      REFRESH_SECRET: ci_only_child_refresh_secret_0123456789abcdef01234567
+
+      PARENT_JWT_SECRET: ci_only_parent_access_secret_0123456789abcdef01234567
+      PARENT_REFRESH_SECRET: ci_only_parent_refresh_secret_0123456789abcdef012345
+
+      ADMIN_JWT_SECRET: ci_only_admin_access_secret_0123456789abcdef0123456789
+
+      EMAIL_VERIFICATION_SECRET: ci_only_email_verification_secret_0123456789abcdef012345
+
+      TWO_FACTOR_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      TWO_FACTOR_RECOVERY_SECRET: YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODk=
+
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: 2525
+      SMTP_USER: ci
+      SMTP_PASS: ci-only-password
+      EMAIL_FROM_NAME: Amanak Alraqami CI
+      EMAIL_FROM_ADDRESS: ci@example.invalid
+
+      MEDIA_STORAGE: local
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Create test environment file
+        working-directory: server
+        shell: bash
+        run: |
+          cat > .env.test <<'EOF'
+          NODE_ENV=test
+          PORT=3000
+          CONNECTION_STRING=postgresql://postgres:postgres@127.0.0.1:5432/amanak_alraqami_test
+          CLIENT_URL=http://localhost:5173
+          COOKIE_SAME_SITE=lax
+          SALT_ROUNDS=10
+          JWT_SECRET=ci_only_child_access_secret_0123456789abcdef0123456789
+          REFRESH_SECRET=ci_only_child_refresh_secret_0123456789abcdef01234567
+          PARENT_JWT_SECRET=ci_only_parent_access_secret_0123456789abcdef01234567
+          PARENT_REFRESH_SECRET=ci_only_parent_refresh_secret_0123456789abcdef012345
+          ADMIN_JWT_SECRET=ci_only_admin_access_secret_0123456789abcdef0123456789
+          EMAIL_VERIFICATION_SECRET=ci_only_email_verification_secret_0123456789abcdef012345
+          TWO_FACTOR_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+          TWO_FACTOR_RECOVERY_SECRET=YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODk=
+          SMTP_HOST=127.0.0.1
+          SMTP_PORT=2525
+          SMTP_USER=ci
+          SMTP_PASS=ci-only-password
+          EMAIL_FROM_NAME=Amanak Alraqami CI
+          EMAIL_FROM_ADDRESS=ci@example.invalid
+          MEDIA_STORAGE=local
+          EOF
+
+      - name: Apply database migrations
+        working-directory: server
+        run: npm run migrate
+
+      - name: Run backend test suite
+        working-directory: server
+        run: npm test
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      VITE_API_URL: http://localhost:3000/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: client
+        run: npm run build
