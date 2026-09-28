@@ -2,6 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/api",
+      "destination": "https://amanak-alraqami.onrender.com/api"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://amanak-alraqami.onrender.com/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
