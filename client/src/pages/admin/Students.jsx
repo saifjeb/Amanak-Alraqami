@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 
@@ -57,15 +57,10 @@ function Students() {
 
   const [error, setError] = useState("");
 
-  async function loadStudents({ refresh = false } = {}) {
+  const loadStudents = useCallback(async ({ refresh = false } = {}) => {
     const startedAt = Date.now();
 
-    if (refresh) {
-      setRefreshing(true);
-    }
-
     try {
-      setError("");
 
       const response = await api.get("/admin/students/status", {
         params: {
@@ -80,6 +75,7 @@ function Students() {
         },
       });
 
+      setError("");
       const nextStudents = extractStudents(response.data);
       const serverSummary = response.data?.summary || {};
 
@@ -128,7 +124,7 @@ function Students() {
         setRefreshing(false);
       }
     }
-  }
+  }, [navigate]);
 
   useEffect(() => {
     let active = true;
@@ -148,7 +144,20 @@ function Students() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadStudents]);
+
+  async function handleRefresh() {
+    if (refreshing) {
+      return;
+    }
+
+    setRefreshing(true);
+    setError("");
+
+    await loadStudents({
+      refresh: true,
+    });
+  }
 
   const filteredStudents = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -343,11 +352,7 @@ function Students() {
           <button
             type="button"
             className="students-refresh-button"
-            onClick={() =>
-              loadStudents({
-                refresh: true,
-              })
-            }
+            onClick={handleRefresh}
             disabled={refreshing || changingId !== null}
             aria-busy={refreshing}
           >

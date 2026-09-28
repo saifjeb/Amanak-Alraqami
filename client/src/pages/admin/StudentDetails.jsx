@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/api.js";
 import "./StudentDetails.css";
@@ -46,16 +46,15 @@ function StudentDetails() {
 
   const [deleteError, setDeleteError] = useState("");
 
-  async function loadStudent() {
+  const loadStudent = useCallback(async () => {
     try {
-      setError("");
-
       const response = await api.get(`/admin/students/${studentId}`, {
         params: {
           _ts: Date.now(),
         },
       });
 
+      setError("");
       setStudent(getStudent(response.data));
     } catch (err) {
       console.error("Student details error:", err);
@@ -78,7 +77,7 @@ function StudentDetails() {
         err.response?.data?.message || "Could not load student details.",
       );
     }
-  }
+  }, [navigate, studentId]);
 
   useEffect(() => {
     let active = true;
@@ -98,7 +97,7 @@ function StudentDetails() {
     return () => {
       active = false;
     };
-  }, [studentId]);
+  }, [loadStudent]);
 
   async function toggleStudent() {
     if (!student) {

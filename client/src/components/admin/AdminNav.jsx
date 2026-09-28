@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import logo from "../../assets/amanak-logo.svg";
 import { useAuth } from "../../hooks/useAuth.js";
@@ -25,7 +25,6 @@ import "./AdminNav.css";
 
 function AdminNav() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const { user, adminLogout } = useAuth();
   const { pick } = useLanguage();
@@ -62,10 +61,6 @@ function AdminNav() {
       icon: Image,
     },
   ];
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
 
   useEffect(() => {
     function handleEscape(event) {

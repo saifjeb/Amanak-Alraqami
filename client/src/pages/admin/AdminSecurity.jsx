@@ -146,15 +146,10 @@ function AdminSecurity() {
   }, []);
 
   const loadSecurity = useCallback(
-    async ({ refresh = false } = {}) => {
+    async () => {
       try {
-        if (refresh) {
-          setRefreshing(true);
-        }
-
-        setError("");
-
         await Promise.all([loadSession(), loadAudit()]);
+        setError("");
       } catch (err) {
         console.error("Security page error:", err);
 
@@ -178,7 +173,11 @@ function AdminSecurity() {
   );
 
   useEffect(() => {
-    loadSecurity();
+    async function start() {
+      await loadSecurity();
+    }
+
+    start();
   }, [loadSecurity]);
 
   async function handleRefresh() {
@@ -186,9 +185,10 @@ function AdminSecurity() {
       return;
     }
 
-    await loadSecurity({
-      refresh: true,
-    });
+    setRefreshing(true);
+    setError("");
+
+    await loadSecurity();
   }
 
   const securityMetrics = useMemo(() => {

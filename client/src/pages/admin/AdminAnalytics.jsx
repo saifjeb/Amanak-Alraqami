@@ -43,11 +43,7 @@ function AdminAnalytics() {
   const [error, setError] = useState("");
   const loadAnalytics = useCallback(
     async ({ refresh = false } = {}) => {
-      if (refresh) {
-        setRefreshing(true);
-      }
       try {
-        setError("");
         const response = await api.get("/admin/analytics", {
           params: {
             _ts: Date.now(),
@@ -58,6 +54,7 @@ function AdminAnalytics() {
           },
         });
 
+        setError("");
         setAnalytics(response.data?.analytics || {});
       } catch (err) {
         if (err.response?.status === 401) {
@@ -87,16 +84,35 @@ function AdminAnalytics() {
   useEffect(() => {
     let active = true;
 
-    loadAnalytics().finally(() => {
-      if (active) {
-        setLoading(false);
+    async function start() {
+      try {
+        await loadAnalytics();
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-    });
+    }
+
+    start();
 
     return () => {
       active = false;
     };
   }, [loadAnalytics]);
+
+  async function handleRefresh() {
+    if (refreshing) {
+      return;
+    }
+
+    setRefreshing(true);
+    setError("");
+
+    await loadAnalytics({
+      refresh: true,
+    });
+  }
 
   const metrics = useMemo(() => {
     const overview = analytics.overview || {};
@@ -247,11 +263,7 @@ function AdminAnalytics() {
           <button
             type="button"
             className="admin-page-refresh"
-            onClick={() =>
-              loadAnalytics({
-                refresh: true,
-              })
-            }
+            onClick={handleRefresh}
             disabled={refreshing}
             aria-busy={refreshing}
             aria-label={
