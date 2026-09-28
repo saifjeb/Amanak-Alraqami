@@ -5,50 +5,75 @@ import { api } from "../../api/api.js";
 import AdminNav from "../../components/admin/AdminNav.jsx";
 import "./AdminSecurity.css";
 
-function formatAction(value) {
+function formatAction(entry) {
+  const value = String(entry?.action || "");
+  const path = String(entry?.request_path || "");
+
   const actions = {
     "admin.login_success": "Admin login success",
     "admin.login_failed": "Admin login failed",
+    "admin.login_2fa_required": "Admin 2FA required",
+    "admin.login_2fa_failed": "Admin 2FA failed",
     "admin.logout": "Admin logout",
-    "student.disable": "Student disable",
-    "student.enable": "Student enable",
-    "student.permanent_delete": "Student permanent delete",
-    "adventure.create": "Adventure create",
-    "adventure.update": "Adventure update",
-    "adventure.set_image": "Adventure set image",
-    "adventure.trash": "Adventure trash",
-    "adventure.restore": "Adventure restore",
-    "adventure.permanent_delete": "Adventure permanent delete",
-    "question.create": "Question create",
-    "question.update": "Question update",
-    "question.set_image": "Question set image",
-    "question.trash": "Question trash",
-    "question.restore": "Question restore",
-    "question.permanent_delete": "Question permanent delete",
-    "media.upload": "Media upload",
-    "media.trash": "Media trash",
-    "media.restore": "Media restore",
-    "media.permanent_delete": "Media permanent delete",
+
+    "student.disable": "Student disabled",
+    "student.enable": "Student enabled",
+    "student.permanent_delete": "Student permanently deleted",
+
+    "adventure.create": "Adventure created",
+    "adventure.update": "Adventure updated",
+    "adventure.set_image": "Adventure image updated",
+    "adventure.set_video": "Adventure video updated",
+    "adventure.trash": "Adventure moved to trash",
+    "adventure.restore": "Adventure restored",
+    "adventure.permanent_delete": "Adventure permanently deleted",
+
+    "question.create": "Question created",
+    "question.update": "Question updated",
+    "question.set_image": "Question image updated",
+    "question.trash": "Question moved to trash",
+    "question.restore": "Question restored",
+    "question.permanent_delete": "Question permanently deleted",
+
+    "media.upload": "Media uploaded",
+    "media.trash": "Media moved to trash",
+    "media.restore": "Media restored",
+    "media.permanent_delete": "Media permanently deleted",
   };
+
+  if (value === "admin.post") {
+    if (path.endsWith("/2fa/setup")) {
+      return "Admin 2FA setup";
+    }
+
+    if (path.endsWith("/2fa/confirm")) {
+      return "Admin 2FA confirmation";
+    }
+
+    if (path.endsWith("/2fa/recovery-codes/regenerate")) {
+      return "Admin recovery codes regenerated";
+    }
+  }
 
   if (!value) {
     return "Admin event";
   }
 
   return (
-    actions[value] || String(value).replace(/\./g, " Ã‚Â· ").replace(/_/g, " ")
+    actions[value] ||
+    value.replace(/\./g, " / ").replace(/_/g, " ")
   );
 }
 
 function formatDate(value) {
   if (!value) {
-    return "Ã¢â‚¬â€";
+    return "N/A";
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Ã¢â‚¬â€";
+    return "N/A";
   }
 
   return date.toLocaleString();
@@ -315,7 +340,7 @@ function AdminSecurity() {
           </button>
         </section>
 
-        {error && <div className="admin-page-warning">Ã¢Å¡Â Ã¯Â¸Â {error}</div>}
+        {error && <div className="admin-page-warning">{error}</div>}
 
         <section className="security-status-grid">
           <article>
@@ -533,7 +558,7 @@ function AdminSecurity() {
               <div>
                 <span>Email</span>
 
-                <strong>{session?.email || "Ã¢â‚¬â€"}</strong>
+                <strong>{session?.email || "N/A"}</strong>
               </div>
 
               <div>
@@ -736,7 +761,7 @@ function AdminSecurity() {
 
                     <div className="security-audit-content">
                       <strong>
-                        {formatAction(entry.action)}
+                        {formatAction(entry)}
 
                         {entry.resource_id ? ` #${entry.resource_id}` : ""}
                       </strong>
@@ -744,15 +769,15 @@ function AdminSecurity() {
                       <small>
                         {entry.admin_email || "Admin"}
 
-                        {" Ã‚Â· "}
+                        {" | "}
 
                         {entry.http_method}
 
-                        {" Ã‚Â· "}
+                        {" | "}
 
                         {entry.status_code}
 
-                        {" Ã‚Â· "}
+                        {" | "}
 
                         {formatDate(entry.created_at)}
                       </small>
