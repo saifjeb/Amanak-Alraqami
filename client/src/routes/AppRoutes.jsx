@@ -1,54 +1,74 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import LandingPage from "../pages/LandingPage.jsx";
 
-import ChildLogin from "../pages/auth/child/ChildLogin.jsx";
-import ChildRegister from "../pages/auth/child/ChildRegister.jsx";
 
-import ParentLogin from "../pages/auth/parent/ParentLogin.jsx";
-import ParentTwoFactor from "../pages/auth/parent/ParentTwoFactor.jsx";
-import ParentRegister from "../pages/auth/parent/ParentRegister.jsx";
-import ParentForgotPassword from "../pages/auth/parent/ParentForgotPassword.jsx";
-import ParentResetPassword from "../pages/auth/parent/ParentResetPassword.jsx";
-import ParentVerifyEmail from "../pages/auth/parent/ParentVerifyEmail.jsx";
 
-import AdminLogin from "../pages/auth/admin/AdminLogin.jsx";
-import AdminTwoFactor from "../pages/auth/admin/AdminTwoFactor.jsx";
-import AdminForgotPassword from "../pages/auth/admin/AdminForgotPassword.jsx";
-import AdminResetPassword from "../pages/auth/admin/AdminResetPassword.jsx";
 
-import ChildDashboard from "../pages/child/ChildDashboard.jsx";
-import Adventures from "../pages/child/Adventures.jsx";
-import AdventureDetails from "../pages/child/AdventureDetails.jsx";
-import QuestionPage from "../pages/child/QuestionPage.jsx";
-import Badges from "../pages/child/Badges.jsx";
-import Assessment from "../pages/child/Assessment.jsx";
-import Profile from "../pages/child/Profile.jsx";
-import LinkParent from "../pages/child/LinkParent.jsx";
 
-import ParentDashboard from "../pages/parent/ParentDashboard.jsx";
-import ChildProgress from "../pages/parent/ChildProgress.jsx";
-import ParentSecurity from "../pages/parent/ParentSecurity.jsx";
 
-import AdminDashboard from "../pages/admin/AdminDashboard.jsx";
-import Students from "../pages/admin/Students.jsx";
-import StudentDetails from "../pages/admin/StudentDetails.jsx";
-import AdventureManagement from "../pages/admin/AdventureManagement.jsx";
-import QuestionManagement from "../pages/admin/QuestionManagement.jsx";
-import MediaManagement from "../pages/admin/MediaManagement.jsx";
-import AdminAnalytics from "../pages/admin/AdminAnalytics.jsx";
-import AdminSecurity from "../pages/admin/AdminSecurity.jsx";
-import AdminSettings from "../pages/admin/AdminSettings.jsx";
 
-import LegalPage from "../pages/legal/LegalPage.jsx";
 
 import ProtectedRoute from "../components/common/ProtectedRoute.jsx";
 
-import NotFound from "../pages/NotFound.jsx";
+const ChildLogin = lazy(() => import("../pages/auth/child/ChildLogin.jsx"));
+const ChildRegister = lazy(() => import("../pages/auth/child/ChildRegister.jsx"));
+const ParentLogin = lazy(() => import("../pages/auth/parent/ParentLogin.jsx"));
+const ParentTwoFactor = lazy(() => import("../pages/auth/parent/ParentTwoFactor.jsx"));
+const ParentRegister = lazy(() => import("../pages/auth/parent/ParentRegister.jsx"));
+const ParentForgotPassword = lazy(() => import("../pages/auth/parent/ParentForgotPassword.jsx"));
+const ParentResetPassword = lazy(() => import("../pages/auth/parent/ParentResetPassword.jsx"));
+const ParentVerifyEmail = lazy(() => import("../pages/auth/parent/ParentVerifyEmail.jsx"));
+const AdminLogin = lazy(() => import("../pages/auth/admin/AdminLogin.jsx"));
+const AdminTwoFactor = lazy(() => import("../pages/auth/admin/AdminTwoFactor.jsx"));
+const AdminForgotPassword = lazy(() => import("../pages/auth/admin/AdminForgotPassword.jsx"));
+const AdminResetPassword = lazy(() => import("../pages/auth/admin/AdminResetPassword.jsx"));
+const ChildDashboard = lazy(() => import("../pages/child/ChildDashboard.jsx"));
+const Adventures = lazy(() => import("../pages/child/Adventures.jsx"));
+const AdventureDetails = lazy(() => import("../pages/child/AdventureDetails.jsx"));
+const QuestionPage = lazy(() => import("../pages/child/QuestionPage.jsx"));
+const Badges = lazy(() => import("../pages/child/Badges.jsx"));
+const Assessment = lazy(() => import("../pages/child/Assessment.jsx"));
+const Profile = lazy(() => import("../pages/child/Profile.jsx"));
+const LinkParent = lazy(() => import("../pages/child/LinkParent.jsx"));
+const ParentDashboard = lazy(() => import("../pages/parent/ParentDashboard.jsx"));
+const ChildProgress = lazy(() => import("../pages/parent/ChildProgress.jsx"));
+const ParentSecurity = lazy(() => import("../pages/parent/ParentSecurity.jsx"));
+const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard.jsx"));
+const Students = lazy(() => import("../pages/admin/Students.jsx"));
+const StudentDetails = lazy(() => import("../pages/admin/StudentDetails.jsx"));
+const AdventureManagement = lazy(() => import("../pages/admin/AdventureManagement.jsx"));
+const QuestionManagement = lazy(() => import("../pages/admin/QuestionManagement.jsx"));
+const MediaManagement = lazy(() => import("../pages/admin/MediaManagement.jsx"));
+const AdminAnalytics = lazy(() => import("../pages/admin/AdminAnalytics.jsx"));
+const AdminSecurity = lazy(() => import("../pages/admin/AdminSecurity.jsx"));
+const AdminSettings = lazy(() => import("../pages/admin/AdminSettings.jsx"));
+const LegalPage = lazy(() => import("../pages/legal/LegalPage.jsx"));
+const NotFound = lazy(() => import("../pages/NotFound.jsx"));
+
+
+function RouteLoading() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        minHeight: "40vh",
+        display: "grid",
+        placeItems: "center",
+        padding: "2rem",
+      }}
+    >
+      Loading...
+    </div>
+  );
+}
 
 function AppRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<RouteLoading />}>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
 
       <Route path="/privacy" element={<LegalPage page="privacy" />} />
@@ -276,7 +296,8 @@ function AppRoutes() {
       />
 
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 
