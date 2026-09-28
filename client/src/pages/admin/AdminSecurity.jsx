@@ -36,19 +36,19 @@ function formatAction(value) {
   }
 
   return (
-    actions[value] || String(value).replace(/\./g, " · ").replace(/_/g, " ")
+    actions[value] || String(value).replace(/\./g, " Ã‚Â· ").replace(/_/g, " ")
   );
 }
 
 function formatDate(value) {
   if (!value) {
-    return "—";
+    return "Ã¢â‚¬â€";
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "—";
+    return "Ã¢â‚¬â€";
   }
 
   return date.toLocaleString();
@@ -88,6 +88,8 @@ function AdminSecurity() {
   const [auditConnected, setAuditConnected] = useState(false);
   const [error, setError] = useState("");
   const [eventFilter, setEventFilter] = useState("all");
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorEnabledAt, setTwoFactorEnabledAt] = useState(null);
 
   const handleUnauthorized = useCallback(() => {
     navigate("/admin/login", {
@@ -145,10 +147,29 @@ function AdminSecurity() {
     setAuditConnected(true);
   }, []);
 
+  const loadTwoFactorStatus = useCallback(async () => {
+    const response = await api.get("/admin/2fa/status", {
+      params: {
+        _ts: Date.now(),
+      },
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
+    setTwoFactorEnabled(Boolean(response.data?.twoFactorEnabled));
+    setTwoFactorEnabledAt(response.data?.twoFactorEnabledAt || null);
+  }, []);
   const loadSecurity = useCallback(
     async () => {
       try {
-        await Promise.all([loadSession(), loadAudit()]);
+        await Promise.all([
+          loadSession(),
+          loadAudit(),
+          loadTwoFactorStatus(),
+        ]);
         setError("");
       } catch (err) {
         console.error("Security page error:", err);
@@ -169,7 +190,7 @@ function AdminSecurity() {
         setRefreshing(false);
       }
     },
-    [handleUnauthorized, loadAudit, loadSession],
+    [handleUnauthorized, loadAudit, loadSession, loadTwoFactorStatus],
   );
 
   useEffect(() => {
@@ -294,7 +315,7 @@ function AdminSecurity() {
           </button>
         </section>
 
-        {error && <div className="admin-page-warning">⚠️ {error}</div>}
+        {error && <div className="admin-page-warning">Ã¢Å¡Â Ã¯Â¸Â {error}</div>}
 
         <section className="security-status-grid">
           <article>
@@ -348,15 +369,27 @@ function AdminSecurity() {
           </article>
 
           <article>
-            <div className="security-icon pending">
+            <div
+              className={
+                twoFactorEnabled ? "security-icon ok" : "security-icon pending"
+              }
+            >
               <ShieldEllipsis size={22} />
             </div>
 
             <div>
               <span>Two-Factor Auth</span>
 
-              <strong>Planned</strong>
+              <strong>{twoFactorEnabled ? "Enabled" : "Not enabled"}</strong>
+
+              {twoFactorEnabledAt && (
+                <small>Enabled {formatDate(twoFactorEnabledAt)}</small>
+              )}
             </div>
+
+            {twoFactorEnabled && (
+              <CheckCircle2 size={18} className="security-check" />
+            )}
           </article>
         </section>
 
@@ -500,7 +533,7 @@ function AdminSecurity() {
               <div>
                 <span>Email</span>
 
-                <strong>{session?.email || "—"}</strong>
+                <strong>{session?.email || "Ã¢â‚¬â€"}</strong>
               </div>
 
               <div>
@@ -711,15 +744,15 @@ function AdminSecurity() {
                       <small>
                         {entry.admin_email || "Admin"}
 
-                        {" · "}
+                        {" Ã‚Â· "}
 
                         {entry.http_method}
 
-                        {" · "}
+                        {" Ã‚Â· "}
 
                         {entry.status_code}
 
-                        {" · "}
+                        {" Ã‚Â· "}
 
                         {formatDate(entry.created_at)}
                       </small>
