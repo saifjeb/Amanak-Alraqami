@@ -82,6 +82,10 @@ function AdventureManagement() {
 
   const [imageTarget, setImageTarget] = useState(null);
 
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+
+  const [videoTarget, setVideoTarget] = useState(null);
+
   const [media, setMedia] = useState([]);
 
   const [loadingMedia, setLoadingMedia] = useState(false);
@@ -481,7 +485,11 @@ function AdventureManagement() {
     try {
       const response = await api.get("/admin/media");
 
-      setMedia(extractArray(response.data));
+      setMedia(
+        extractArray(response.data).filter((item) =>
+          ["image/png", "image/jpeg", "image/webp"].includes(item.mime_type),
+        ),
+      );
     } catch (err) {
       if (err.response?.status === 401) {
         handleUnauthorized();
@@ -524,6 +532,65 @@ function AdventureManagement() {
       }
 
       setError(err.response?.data?.message || "Could not assign image.");
+    } finally {
+      setAssigningMediaId(null);
+    }
+  }
+
+  async function openVideoPicker(adventure) {
+    setVideoTarget(adventure);
+    setVideoModalOpen(true);
+    setLoadingMedia(true);
+
+    clearMessages();
+
+    try {
+      const response = await api.get("/admin/media");
+
+      setMedia(
+        extractArray(response.data).filter(
+          (item) => item.mime_type === "video/mp4",
+        ),
+      );
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      setError(err.response?.data?.message || "Could not load media library.");
+    } finally {
+      setLoadingMedia(false);
+    }
+  }
+
+  async function assignVideo(mediaId) {
+    if (!videoTarget) {
+      return;
+    }
+
+    try {
+      setAssigningMediaId(mediaId);
+
+      clearMessages();
+
+      await api.patch(`/admin/adventures/${videoTarget.id}/video`, {
+        media_id: Number(mediaId),
+      });
+
+      setSuccess("Adventure video updated.");
+
+      setVideoModalOpen(false);
+      setVideoTarget(null);
+
+      await loadData();
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      setError(err.response?.data?.message || "Could not assign video.");
     } finally {
       setAssigningMediaId(null);
     }
@@ -722,7 +789,15 @@ function AdventureManagement() {
                           className="image"
                           onClick={() => openImagePicker(adventure)}
                         >
-                          🖼️ Image
+                          Image
+                        </button>
+
+                        <button
+                          type="button"
+                          className="video"
+                          onClick={() => openVideoPicker(adventure)}
+                        >
+                          Video
                         </button>
 
                         <button
@@ -952,7 +1027,7 @@ function AdventureManagement() {
               <div className="media-picker-empty">
                 <span>🖼️</span>
 
-                <p>No media uploaded yet.</p>
+                <p>No matching media uploaded yet.</p>
 
                 <Link to="/admin/media">Open Media Manager</Link>
               </div>
@@ -971,6 +1046,71 @@ function AdventureManagement() {
                     />
 
                     <span>{item.original_name || `Media #${item.id}`}</span>
+
+                    {assigningMediaId === item.id && (
+                      <small>Assigning...</small>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {videoModalOpen && (
+        <div className="admin-modal-backdrop">
+          <section className="admin-media-picker">
+            <header>
+              <div>
+                <span>VIDEO LIBRARY</span>
+
+                <h2>Choose Adventure Video</h2>
+
+                <p>{videoTarget?.title_en}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setVideoModalOpen(false);
+                  setVideoTarget(null);
+                }}
+              >
+                Close
+              </button>
+            </header>
+
+            {loadingMedia ? (
+              <div className="media-picker-loading">
+                Loading media...
+              </div>
+            ) : media.length === 0 ? (
+              <div className="media-picker-empty">
+                <p>No MP4 videos uploaded yet.</p>
+
+                <Link to="/admin/media">
+                  Open Media Manager
+                </Link>
+              </div>
+            ) : (
+              <div className="admin-media-picker-grid">
+                {media.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    onClick={() => assignVideo(item.id)}
+                    disabled={assigningMediaId !== null}
+                  >
+                    <video
+                      src={getMediaUrl(`/api/media/${item.id}`)}
+                      preload="metadata"
+                      playsInline
+                    />
+
+                    <span>
+                      {item.original_name || `Media #${item.id}`}
+                    </span>
 
                     {assigningMediaId === item.id && (
                       <small>Assigning...</small>

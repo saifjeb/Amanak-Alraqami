@@ -1,12 +1,14 @@
-import multer from "multer";
+﻿import multer from "multer";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_MEDIA_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
 const storage = multer.memoryStorage();
+
 const upload = multer({
   storage,
 
   limits: {
-    fileSize: MAX_FILE_SIZE,
+    fileSize: MAX_MEDIA_FILE_SIZE,
     files: 1,
   },
 }).single("image");
@@ -21,27 +23,23 @@ export const uploadMediaImage = (req, res, next) => {
       if (error.code === "LIMIT_FILE_SIZE") {
         return res.status(413).json({
           success: false,
-          message: "Image must not exceed 5 MB",
+          message: "Media file must not exceed 50 MB",
         });
       }
 
-      if (error.code === "LIMIT_UNEXPECTED_FILE") {
+      if (
+        error.code === "LIMIT_UNEXPECTED_FILE" ||
+        error.code === "LIMIT_FILE_COUNT"
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Only one image file is allowed",
-        });
-      }
-
-      if (error.code === "LIMIT_FILE_COUNT") {
-        return res.status(400).json({
-          success: false,
-          message: "Only one image file is allowed",
+          message: "Only one media file is allowed",
         });
       }
 
       return res.status(400).json({
         success: false,
-        message: "Invalid file upload",
+        message: "Invalid media upload",
       });
     }
 

@@ -1,61 +1,176 @@
-import pool from "../config/db.js";
+﻿import pool from "../config/db.js";
 
 export const getAllAdventures = async () => {
-  const result = await pool.query(`SELECT a.id,a.title_ar,a.title_en,a.description_ar,a.description_en,a.icon,a.badge_name,a.completion_points,a.display_order,a.is_active,a.created_at,
-    CASE WHEN m.id IS NOT NULL AND m.deleted_at IS NULL THEN m.id ELSE NULL END AS image_media_id,
-    CASE WHEN m.id IS NOT NULL AND m.deleted_at IS NULL THEN '/api/media/' || m.id ELSE NULL END AS image_url
-    FROM adventures a LEFT JOIN media m
-    ON m.id = a.image_media_id
-    WHERE a.is_active = TRUE      
-    AND a.deleted_at IS NULL
-    ORDER BY a.display_order ASC;`);
+  const result = await pool.query(`
+    SELECT
+      a.id,
+      a.title_ar,
+      a.title_en,
+      a.description_ar,
+      a.description_en,
+      a.icon,
+      a.badge_name,
+      a.completion_points,
+      a.display_order,
+      a.is_active,
+      a.created_at,
+
+      CASE
+        WHEN im.id IS NOT NULL
+          AND im.deleted_at IS NULL
+        THEN im.id
+        ELSE NULL
+      END AS image_media_id,
+
+      CASE
+        WHEN im.id IS NOT NULL
+          AND im.deleted_at IS NULL
+        THEN '/api/media/' || im.id
+        ELSE NULL
+      END AS image_url,
+
+      CASE
+        WHEN vm.id IS NOT NULL
+          AND vm.deleted_at IS NULL
+        THEN vm.id
+        ELSE NULL
+      END AS video_media_id,
+
+      CASE
+        WHEN vm.id IS NOT NULL
+          AND vm.deleted_at IS NULL
+        THEN '/api/media/' || vm.id
+        ELSE NULL
+      END AS video_url
+
+    FROM adventures a
+
+    LEFT JOIN media im
+      ON im.id = a.image_media_id
+
+    LEFT JOIN media vm
+      ON vm.id = a.video_media_id
+
+    WHERE a.is_active = TRUE
+      AND a.deleted_at IS NULL
+
+    ORDER BY a.display_order ASC;
+  `);
+
   return result.rows;
 };
 
 export const getAdventureById = async (id) => {
   const result = await pool.query(
-    `SELECT a.id,a.title_ar,a.title_en,a.description_ar,a.description_en,a.icon,a.badge_name,a.completion_points,a.display_order,a.is_active,a.created_at,
+    `
+    SELECT
+      a.id,
+      a.title_ar,
+      a.title_en,
+      a.description_ar,
+      a.description_en,
+      a.icon,
+      a.badge_name,
+      a.completion_points,
+      a.display_order,
+      a.is_active,
+      a.created_at,
+
       CASE
-        WHEN m.id IS NOT NULL
-          AND m.deleted_at IS NULL
-        THEN m.id
+        WHEN im.id IS NOT NULL
+          AND im.deleted_at IS NULL
+        THEN im.id
         ELSE NULL
       END AS image_media_id,
 
       CASE
-        WHEN m.id IS NOT NULL
-          AND m.deleted_at IS NULL
-        THEN '/api/media/' || m.id
+        WHEN im.id IS NOT NULL
+          AND im.deleted_at IS NULL
+        THEN '/api/media/' || im.id
         ELSE NULL
-      END AS image_url
+      END AS image_url,
+
+      CASE
+        WHEN vm.id IS NOT NULL
+          AND vm.deleted_at IS NULL
+        THEN vm.id
+        ELSE NULL
+      END AS video_media_id,
+
+      CASE
+        WHEN vm.id IS NOT NULL
+          AND vm.deleted_at IS NULL
+        THEN '/api/media/' || vm.id
+        ELSE NULL
+      END AS video_url
 
     FROM adventures a
-    LEFT JOIN media m
-      ON m.id = a.image_media_id
+
+    LEFT JOIN media im
+      ON im.id = a.image_media_id
+
+    LEFT JOIN media vm
+      ON vm.id = a.video_media_id
+
     WHERE a.id = $1
       AND a.is_active = TRUE
-      AND a.deleted_at IS NULL LIMIT 1; `,[id],);
+      AND a.deleted_at IS NULL
+
+    LIMIT 1;
+    `,
+    [id],
+  );
+
   return result.rows[0] || null;
 };
 
 export const getAllAdventuresAdmin = async () => {
   const result = await pool.query(`
-SELECT a.id,a.title_ar,a.title_en,a.description_ar,a.description_en,a.icon,a.badge_name,a.completion_points,a.display_order,a.is_active,a.created_at,a.deleted_at,a.image_media_id,
+    SELECT
+      a.id,
+      a.title_ar,
+      a.title_en,
+      a.description_ar,
+      a.description_en,
+      a.icon,
+      a.badge_name,
+      a.completion_points,
+      a.display_order,
+      a.is_active,
+      a.created_at,
+      a.deleted_at,
+      a.image_media_id,
+      a.video_media_id,
+
       CASE
-        WHEN m.id IS NOT NULL
-          AND m.deleted_at IS NULL
-        THEN '/api/media/' || m.id
+        WHEN im.id IS NOT NULL
+          AND im.deleted_at IS NULL
+        THEN '/api/media/' || im.id
         ELSE NULL
-      END AS image_url
+      END AS image_url,
+
+      CASE
+        WHEN vm.id IS NOT NULL
+          AND vm.deleted_at IS NULL
+        THEN '/api/media/' || vm.id
+        ELSE NULL
+      END AS video_url
+
     FROM adventures a
 
-    LEFT JOIN media m
-      ON m.id = a.image_media_id
+    LEFT JOIN media im
+      ON im.id = a.image_media_id
+
+    LEFT JOIN media vm
+      ON vm.id = a.video_media_id
+
     WHERE a.deleted_at IS NULL
-    ORDER BY a.display_order ASC;`);
+
+    ORDER BY a.display_order ASC;
+  `);
+
   return result.rows;
 };
-
 export const createAdventure = async ({
   titleAr,titleEn,descriptionAr,descriptionEn,icon,badgeName,completionPoints,displayOrder,isActive,}) => {
   const result = await pool.query(
@@ -181,6 +296,27 @@ export const setAdventureImage = async (adventureId, mediaId) => {
       title_ar,
       title_en,
       image_media_id;
+    `,
+    [mediaId, adventureId],
+  );
+
+  return result.rows[0] || null;
+};
+export const setAdventureVideo = async (
+  adventureId,
+  mediaId,
+) => {
+  const result = await pool.query(
+    `
+    UPDATE adventures
+    SET video_media_id = $1
+    WHERE id = $2
+      AND deleted_at IS NULL
+    RETURNING
+      id,
+      title_ar,
+      title_en,
+      video_media_id;
     `,
     [mediaId, adventureId],
   );

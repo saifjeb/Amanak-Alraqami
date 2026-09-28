@@ -4,8 +4,25 @@ import { api } from "../../api/api.js";
 import AdminNav from "../../components/admin/AdminNav.jsx";
 import "./MediaManagement.css";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_VIDEO_FILE_SIZE = 50 * 1024 * 1024;
+
+const IMAGE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+];
+
+const VIDEO_TYPES = ["video/mp4"];
+
+const ALLOWED_TYPES = [
+  ...IMAGE_TYPES,
+  ...VIDEO_TYPES,
+];
+
+function isVideoType(mimeType) {
+  return VIDEO_TYPES.includes(mimeType);
+}
 
 function extractMedia(data) {
   if (Array.isArray(data)) {
@@ -197,18 +214,26 @@ function MediaManagement() {
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("Only PNG, JPEG and WEBP images are allowed.");
+      setError(
+        "Only PNG, JPEG, WEBP images or MP4 videos are allowed.",
+      );
 
       event.target.value = "";
-
       return;
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      setError("Image must not exceed 5 MB.");
+    const maxFileSize = isVideoType(file.type)
+      ? MAX_VIDEO_FILE_SIZE
+      : MAX_IMAGE_FILE_SIZE;
+
+    if (file.size > maxFileSize) {
+      setError(
+        isVideoType(file.type)
+          ? "MP4 video must not exceed 50 MB."
+          : "Image must not exceed 5 MB.",
+      );
 
       event.target.value = "";
-
       return;
     }
 
@@ -217,13 +242,12 @@ function MediaManagement() {
     }
 
     setSelectedFile(file);
-
     setPreviewUrl(URL.createObjectURL(file));
   }
 
   async function uploadMedia() {
     if (!selectedFile) {
-      setError("Choose an image first.");
+      setError("Choose an image or MP4 video first.");
 
       return;
     }
@@ -238,7 +262,11 @@ function MediaManagement() {
 
       await api.post("/admin/media/upload", formData);
 
-      setSuccess("Image uploaded successfully.");
+      setSuccess(
+        isVideoType(selectedFile.type)
+          ? "Video uploaded successfully."
+          : "Image uploaded successfully.",
+      );
 
       clearSelectedFile();
 
@@ -252,12 +280,18 @@ function MediaManagement() {
       }
 
       if (err.response?.status === 413) {
-        setError("The selected image is too large.");
+        setError(
+          isVideoType(selectedFile?.type)
+            ? "The selected video exceeds 50 MB."
+            : "The selected image exceeds 5 MB.",
+        );
 
         return;
       }
 
-      setError(err.response?.data?.message || "Could not upload image.");
+      setError(
+        err.response?.data?.message || "Could not upload media.",
+      );
     } finally {
       setUploading(false);
     }
@@ -321,7 +355,7 @@ function MediaManagement() {
 
   async function permanentlyDelete(item) {
     const value = window.prompt(
-      `This permanently removes the image.\n\nType DELETE to permanently remove "${item.original_name}".`,
+      `This permanently removes the media file.\n\nType DELETE to permanently remove "${item.original_name}".`,
     );
 
     if (value !== "DELETE") {
@@ -349,7 +383,7 @@ function MediaManagement() {
       if (err.response?.status === 409) {
         setError(
           err.response?.data?.message ||
-            "This image is still used by content and cannot be deleted.",
+            "This media file is still used by content and cannot be deleted.",
         );
 
         return;
@@ -387,8 +421,8 @@ function MediaManagement() {
             <h1>Media Management</h1>
 
             <p>
-              Upload and manage educational images used in adventures and
-              questions.
+              Upload and manage educational images and MP4 videos used in
+              adventures and questions.
             </p>
           </div>
 
@@ -401,7 +435,7 @@ function MediaManagement() {
 
             <strong>{media.length}</strong>
 
-            <p>Active Images</p>
+            <p>Active Media</p>
           </article>
 
           <article>
@@ -426,9 +460,9 @@ function MediaManagement() {
             <div>
               <span>UPLOAD MEDIA</span>
 
-              <h2>Add New Image</h2>
+              <h2>Add New Media</h2>
 
-              <p>PNG, JPEG or WEBP. Maximum file size: 5 MB.</p>
+              <p>Images: PNG, JPEG or WEBP up to 5 MB. Videos: MP4 up to 50 MB.</p>
             </div>
 
             <div className="media-upload-icon">☁️</div>
@@ -439,7 +473,7 @@ function MediaManagement() {
               ref={fileInputRef}
               id="admin-media-upload"
               type="file"
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/png,image/jpeg,image/webp,video/mp4"
               onChange={handleFileChange}
               disabled={uploading}
             />
@@ -447,14 +481,26 @@ function MediaManagement() {
             <label htmlFor="admin-media-upload">
               <span>📁</span>
 
-              <strong>Choose Image</strong>
+              <strong>Choose Image or Video</strong>
 
               <small>Browse your computer</small>
             </label>
 
             {selectedFile && (
               <div className="selected-media-preview">
-                <img src={previewUrl} alt="Selected preview" />
+                {isVideoType(selectedFile.type) ? (
+                  <video
+                    src={previewUrl}
+                    controls
+                    preload="metadata"
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={previewUrl}
+                    alt="Selected preview"
+                  />
+                )}
 
                 <div>
                   <strong>{selectedFile.name}</strong>
@@ -481,7 +527,7 @@ function MediaManagement() {
                 onClick={uploadMedia}
                 disabled={uploading}
               >
-                {uploading ? "Uploading..." : "Upload Image ↑"}
+                {uploading ? "Uploading..." : "Upload Media"}
               </button>
             )}
           </div>
@@ -489,7 +535,7 @@ function MediaManagement() {
 
         {error && (
           <div className="media-admin-message error" role="alert">
-            ⚠️ {error}
+            Warning: {error}
           </div>
         )}
 
@@ -541,12 +587,12 @@ function MediaManagement() {
             <h2>
               {currentView === "trash"
                 ? "Media trash is empty"
-                : "No images uploaded yet"}
+                : "No media uploaded yet"}
             </h2>
 
             <p>
               {currentView === "active"
-                ? "Upload your first image above."
+                ? "Upload your first image or MP4 video above."
                 : "Deleted media will appear here."}
             </p>
           </section>
@@ -555,11 +601,20 @@ function MediaManagement() {
             {displayedMedia.map((item) => (
               <article className="media-library-card" key={item.id}>
                 <div className="media-card-image">
-                  <img
-                    src={resolveMediaUrl(item)}
-                    alt={item.original_name || "Amanak media"}
-                    onError={markImageUnavailable}
-                  />
+                  {isVideoType(item.mime_type) ? (
+                    <video
+                      src={resolveMediaUrl(item)}
+                      controls
+                      preload="metadata"
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      src={resolveMediaUrl(item)}
+                      alt={item.original_name || "Amanak media"}
+                      onError={markImageUnavailable}
+                    />
+                  )}
 
                   <span className="media-id-badge">#{item.id}</span>
                 </div>

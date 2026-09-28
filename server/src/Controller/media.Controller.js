@@ -1,4 +1,4 @@
-import { logger, serializeError } from "../Utils/logger.js";
+﻿import { logger, serializeError } from "../Utils/logger.js";
 import path from "node:path";
 
 import {
@@ -13,6 +13,7 @@ import {
 
 import {
   sanitizeImageBuffer,
+  detectMp4Type,
   generateStoredName,
 } from "../Utils/media.Utils.js";
 
@@ -39,27 +40,82 @@ export const adminUploadMediaController = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "Image file is required",
+        message: "Media file is required",
       });
     }
 
-    let sanitizedImage;
+    const IMAGE_MIME_TYPES = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+    ]);
 
-    try {
-      sanitizedImage = await sanitizeImageBuffer(req.file.buffer);
-    } catch {
+    const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+    const MAX_VIDEO_FILE_SIZE = 50 * 1024 * 1024;
+
+    let preparedMedia;
+    let mediaKind;
+
+    if (IMAGE_MIME_TYPES.has(req.file.mimetype)) {
+      if (req.file.size > MAX_IMAGE_FILE_SIZE) {
+        return res.status(413).json({
+          success: false,
+          message: "Image must not exceed 5 MB",
+        });
+      }
+
+      let sanitizedImage;
+
+      try {
+        sanitizedImage =
+          await sanitizeImageBuffer(req.file.buffer);
+      } catch {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or corrupted image file",
+        });
+      }
+
+      preparedMedia = sanitizedImage;
+      mediaKind = "image";
+    } else if (req.file.mimetype === "video/mp4") {
+      if (req.file.size > MAX_VIDEO_FILE_SIZE) {
+        return res.status(413).json({
+          success: false,
+          message: "Video must not exceed 50 MB",
+        });
+      }
+
+      const detectedVideo =
+        detectMp4Type(req.file.buffer);
+
+      if (!detectedVideo) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or corrupted MP4 video file",
+        });
+      }
+
+      preparedMedia = {
+        buffer: req.file.buffer,
+        mimeType: detectedVideo.mimeType,
+        extension: detectedVideo.extension,
+      };
+
+      mediaKind = "video";
+    } else {
       return res.status(400).json({
         success: false,
-        message: "Invalid or corrupted image file",
+        message:
+          "Only PNG, JPEG, WEBP images and MP4 videos are allowed",
       });
     }
 
-    storedName = generateStoredName(
-      sanitizedImage.extension,
-    );
+    storedName =
+      generateStoredName(preparedMedia.extension);
 
     await saveMediaObject(
-      sanitizedImage.buffer,
+      preparedMedia.buffer,
       storedName,
     );
 
@@ -74,17 +130,20 @@ export const adminUploadMediaController = async (req, res, next) => {
     const media = await createMedia({
       originalName:
         originalName ||
-        `image${sanitizedImage.extension}`,
+        `${mediaKind}${preparedMedia.extension}`,
       storedName,
-      mimeType: sanitizedImage.mimeType,
-      fileSize: sanitizedImage.buffer.length,
+      mimeType: preparedMedia.mimeType,
+      fileSize: preparedMedia.buffer.length,
       filePath: relativeFilePath,
       adminId: req.admin.id,
     });
 
     return res.status(201).json({
       success: true,
-      message: "Image uploaded successfully",
+      message:
+        mediaKind === "video"
+          ? "Video uploaded successfully"
+          : "Image uploaded successfully",
       media: {
         id: media.id,
         original_name: media.original_name,
@@ -111,7 +170,6 @@ export const adminUploadMediaController = async (req, res, next) => {
     return next(error);
   }
 };
-
 export const adminGetMediaController = async (
   req,
   res,

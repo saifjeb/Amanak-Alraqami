@@ -63,6 +63,11 @@ function AdventureDetails() {
 
   const fallbackCover = getAdventureFallbackCover(adventure);
   const imageUrl = getMediaUrl(adventure.image_url) || (adventure.image_media_id ? getMediaUrl(`/api/media/${adventure.image_media_id}`) : fallbackCover);
+  const videoUrl =
+    getMediaUrl(adventure.video_url) ||
+    (adventure.video_media_id
+      ? getMediaUrl(`/api/media/${adventure.video_media_id}`)
+      : null);
   const title = (isArabic ? adventure.title_ar : adventure.title_en) || adventure.title_en || adventure.title_ar;
   const description = (isArabic ? adventure.description_ar : adventure.description_en) || adventure.description_en || adventure.description_ar;
 
@@ -82,6 +87,25 @@ function AdventureDetails() {
           </div>
           <div className="details-content"><span className="details-label">{pick("المغامرة", "ADVENTURE")} {adventure.display_order}</span><h1>{title}</h1><p>{description}</p></div>
         </section>
+        {videoUrl && (
+          <section className="details-video-card">
+            <div className="details-video-heading">
+              <span>ADVENTURE VIDEO</span>
+              <h2>{pick("فيديو المغامرة", "Adventure Video")}</h2>
+            </div>
+
+            <video
+              className="details-video-player"
+              controls
+              preload="metadata"
+              playsInline
+              poster={imageUrl || fallbackCover}
+            >
+              <source src={videoUrl} type="video/mp4" />
+              Your browser does not support MP4 video.
+            </video>
+          </section>
+        )}
         <section className="details-info-grid">
           <article><span>❓</span><strong>{questionCount}</strong><p>{pick("تحديات", "Challenges")}</p></article>
           <article><span>⭐</span><strong>{adventure.completion_points || 50}</strong><p>{pick("نقاط المغامرة", "Adventure Points")}</p></article>

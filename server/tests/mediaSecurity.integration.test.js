@@ -1,4 +1,4 @@
-import test, { before, after } from "node:test";
+﻿import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
 import bcrypt from "bcrypt";
@@ -123,6 +123,118 @@ test("valid PNG image can be uploaded", async () => {
   assert.ok(Number(response.body.media.file_size) > 0);
 });
 
+test("MP4 with valid ftyp signature can be uploaded", async () => {
+  const mp4 = Buffer.alloc(1024, 0);
+
+  mp4.writeUInt32BE(24, 0);
+  mp4.write("ftyp", 4, "ascii");
+  mp4.write("isom", 8, "ascii");
+  mp4.writeUInt32BE(0, 12);
+  mp4.write("isom", 16, "ascii");
+  mp4.write("mp42", 20, "ascii");
+
+  const response = await adminRequest()
+    .attach("image", mp4, {
+      filename: "lesson.mp4",
+      contentType: "video/mp4",
+    })
+    .expect(201);
+
+  assert.equal(response.body.success, true);
+  assert.equal(response.body.media.mime_type, "video/mp4");
+  assert.match(
+    response.body.media.stored_name,
+    /^[a-f0-9]{48}\.mp4$/,
+  );
+  assert.ok(Number(response.body.media.file_size) > 0);
+});
+
+test("MP4 supports HTTP byte range requests", async () => {
+  const mp4 = Buffer.alloc(1024, 0);
+
+  mp4.writeUInt32BE(24, 0);
+  mp4.write("ftyp", 4, "ascii");
+  mp4.write("isom", 8, "ascii");
+  mp4.writeUInt32BE(0, 12);
+  mp4.write("isom", 16, "ascii");
+  mp4.write("mp42", 20, "ascii");
+
+  const uploadResponse = await adminRequest()
+    .attach("image", mp4, {
+      filename: "range-test.mp4",
+      contentType: "video/mp4",
+    })
+    .expect(201);
+
+  const mediaId = uploadResponse.body.media.id;
+
+  const response = await request(app)
+    .get(`/api/media/${mediaId}`)
+    .set("Range", "bytes=0-9")
+    .expect(206);
+
+  assert.equal(
+    response.headers["accept-ranges"],
+    "bytes",
+  );
+
+  assert.equal(
+    response.headers["content-range"],
+    "bytes 0-9/1024",
+  );
+
+  assert.equal(
+    Number(response.headers["content-length"]),
+    10,
+  );
+
+  assert.equal(
+    response.headers["content-type"],
+    "video/mp4",
+  );
+
+  assert.equal(response.body.length, 10);
+});
+test("fake file disguised as MP4 is rejected", async () => {
+  const fakeVideo = Buffer.from(
+    "This is not a real MP4 video file",
+  );
+
+  const response = await adminRequest()
+    .attach("image", fakeVideo, {
+      filename: "fake.mp4",
+      contentType: "video/mp4",
+    })
+    .expect(400);
+
+  assert.equal(response.body.success, false);
+  assert.equal(
+    response.body.message,
+    "Invalid or corrupted MP4 video file",
+  );
+});
+
+test("video larger than 50 MB is rejected", async () => {
+  const oversizedVideo =
+    Buffer.alloc(50 * 1024 * 1024 + 1, 0);
+
+  oversizedVideo.writeUInt32BE(24, 0);
+  oversizedVideo.write("ftyp", 4, "ascii");
+  oversizedVideo.write("isom", 8, "ascii");
+
+  const response = await adminRequest()
+    .attach("image", oversizedVideo, {
+      filename: "too-large.mp4",
+      contentType: "video/mp4",
+    })
+    .expect(413);
+
+  assert.equal(response.body.success, false);
+  assert.equal(
+    response.body.message,
+    "Media file must not exceed 50 MB",
+  );
+});
 test("text disguised as PNG is rejected", async () => {
   const fakeImage = Buffer.from("This is not a real image");
   const response = await adminRequest()

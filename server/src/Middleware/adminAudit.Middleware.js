@@ -1,4 +1,4 @@
-import { createAdminAuditLog } from "../Model/adminAudit.Model.js";
+﻿import { createAdminAuditLog } from "../Model/adminAudit.Model.js";
 import { logger, serializeError } from "../Utils/logger.js";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -67,6 +67,14 @@ const classifyAdminAction = (method, requestPath) => {
   if (/^\/adventures\/\d+\/image$/.test(path)) {
     return {
       action: "adventure.set_image",
+      resourceType: "adventure",
+      resourceId,
+    };
+  }
+
+  if (/^\/adventures\/\d+\/video$/.test(path)) {
+    return {
+      action: "adventure.set_video",
       resourceType: "adventure",
       resourceId,
     };

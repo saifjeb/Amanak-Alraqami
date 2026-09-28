@@ -1,4 +1,4 @@
-import {getAllAdventures,getAdventureById,getAllAdventuresAdmin,createAdventure,updateAdventure,moveAdventureToTrash,getTrashedAdventures,restoreAdventure,permanentlyDeleteAdventure,setAdventureImage} from "../Model/adventure.Model.js";
+﻿import {getAllAdventures,getAdventureById,getAllAdventuresAdmin,createAdventure,updateAdventure,moveAdventureToTrash,getTrashedAdventures,restoreAdventure,permanentlyDeleteAdventure,setAdventureImage,setAdventureVideo} from "../Model/adventure.Model.js";
 import {getMediaById} from "../Model/media.Model.js";
 const handleAdventureConflict = (error,res,next) => {
   if (error.code !== "23505") {
@@ -245,15 +245,19 @@ export const adminPermanentDeleteAdventureController =
 export const adminSetAdventureImageController =
   async (req, res, next) => {
     try {
-      const adventureId = Number(req.params.id);
-      const mediaId = Number(req.body.media_id);
+      const adventureId =
+        Number(req.params.id);
 
-      if (!Number.isInteger(adventureId,) ||adventureId <= 0) 
-        {
+      const mediaId =
+        Number(req.body.media_id);
+
+      if (
+        !Number.isInteger(adventureId) ||
+        adventureId <= 0
+      ) {
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid adventure ID",
+          message: "Invalid adventure ID",
         });
       }
 
@@ -263,21 +267,17 @@ export const adminSetAdventureImageController =
       ) {
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid media ID",
+          message: "Invalid media ID",
         });
       }
 
       const media =
-        await getMediaById(
-          mediaId,
-        );
+        await getMediaById(mediaId);
 
       if (!media) {
         return res.status(404).json({
           success: false,
-          message:
-            "Media not found",
+          message: "Media not found",
         });
       }
 
@@ -286,6 +286,25 @@ export const adminSetAdventureImageController =
           success: false,
           message:
             "Cannot attach media that is in trash",
+        });
+      }
+
+      const allowedImageTypes =
+        new Set([
+          "image/png",
+          "image/jpeg",
+          "image/webp",
+        ]);
+
+      if (
+        !allowedImageTypes.has(
+          media.mime_type,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Selected media is not a supported image",
         });
       }
 
@@ -298,8 +317,7 @@ export const adminSetAdventureImageController =
       if (!adventure) {
         return res.status(404).json({
           success: false,
-          message:
-            "Adventure not found",
+          message: "Adventure not found",
         });
       }
 
@@ -310,6 +328,91 @@ export const adminSetAdventureImageController =
         adventure: {
           ...adventure,
           image_url:
+            `/api/media/${mediaId}`,
+        },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+export const adminSetAdventureVideoController =
+  async (req, res, next) => {
+    try {
+      const adventureId =
+        Number(req.params.id);
+
+      const mediaId =
+        Number(req.body.media_id);
+
+      if (
+        !Number.isInteger(adventureId) ||
+        adventureId <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid adventure ID",
+        });
+      }
+
+      if (
+        !Number.isInteger(mediaId) ||
+        mediaId <= 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid media ID",
+        });
+      }
+
+      const media =
+        await getMediaById(mediaId);
+
+      if (!media) {
+        return res.status(404).json({
+          success: false,
+          message: "Media not found",
+        });
+      }
+
+      if (media.deleted_at) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Cannot attach media that is in trash",
+        });
+      }
+
+      if (
+        media.mime_type !== "video/mp4"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Selected media is not an MP4 video",
+        });
+      }
+
+      const adventure =
+        await setAdventureVideo(
+          adventureId,
+          mediaId,
+        );
+
+      if (!adventure) {
+        return res.status(404).json({
+          success: false,
+          message: "Adventure not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Adventure video updated successfully",
+        adventure: {
+          ...adventure,
+          video_url:
             `/api/media/${mediaId}`,
         },
       });

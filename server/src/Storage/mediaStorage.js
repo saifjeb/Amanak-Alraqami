@@ -21,7 +21,7 @@ const STORAGE_DRIVER = (
   .toLowerCase();
 
 const STORED_NAME_PATTERN =
-  /^[a-f0-9]{48}\.(jpg|png|webp)$/;
+  /^[a-f0-9]{48}\.(jpg|png|webp|mp4)$/;
 
 const VALID_STORAGE_DRIVERS =
   new Set(["local", "s3"]);
@@ -30,6 +30,7 @@ const CONTENT_TYPES = {
   ".jpg": "image/jpeg",
   ".png": "image/png",
   ".webp": "image/webp",
+  ".mp4": "video/mp4",
 };
 
 let cachedS3Client = null;
@@ -277,6 +278,7 @@ async function saveS3Object(
 
 async function readS3Object(
   storedName,
+  range = null,
 ) {
   const config =
     getS3Configuration();
@@ -285,19 +287,34 @@ async function readS3Object(
     getS3Client();
 
   try {
+    const command = {
+      Bucket: config.bucket,
+      Key: getS3ObjectKey(
+        storedName,
+      ),
+    };
+
+    if (range) {
+      command.Range = range;
+    }
+
     const result =
       await client.send(
-        new GetObjectCommand({
-          Bucket: config.bucket,
-          Key: getS3ObjectKey(
-            storedName,
-          ),
-        }),
+        new GetObjectCommand(command),
       );
 
-    return await streamToBuffer(
-      result.Body,
-    );
+    const buffer =
+      await streamToBuffer(
+        result.Body,
+      );
+
+    return {
+      buffer,
+      contentRange:
+        result.ContentRange || null,
+      contentLength:
+        result.ContentLength ?? buffer?.length ?? 0,
+    };
   } catch (error) {
     if (isS3NotFoundError(error)) {
       return null;
@@ -381,7 +398,74 @@ export async function readMediaObject(
     }
   }
 
-  return readS3Object(storedName);
+  const result =
+    await readS3Object(storedName);
+
+  return result?.buffer || null;
+}
+
+export async function readMediaRange(
+  storedName,
+  start,
+  end,
+) {
+  ensureSupportedDriver();
+
+  if (
+    !Number.isSafeInteger(start) ||
+    !Number.isSafeInteger(end) ||
+    start < 0 ||
+    end < start
+  ) {
+    throw new Error("Invalid media byte range");
+  }
+
+  if (STORAGE_DRIVER === "local") {
+    const filePath =
+      getLocalPath(storedName);
+
+    try {
+      const handle =
+        await fs.open(filePath, "r");
+
+      try {
+        const length =
+          end - start + 1;
+
+        const buffer =
+          Buffer.alloc(length);
+
+        const { bytesRead } =
+          await handle.read(
+            buffer,
+            0,
+            length,
+            start,
+          );
+
+        return {
+          buffer:
+            bytesRead === length
+              ? buffer
+              : buffer.subarray(0, bytesRead),
+          contentLength: bytesRead,
+        };
+      } finally {
+        await handle.close();
+      }
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  return readS3Object(
+    storedName,
+    `bytes=${start}-${end}`,
+  );
 }
 
 export async function deleteMediaObject(

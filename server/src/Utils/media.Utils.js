@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+﻿import crypto from "node:crypto";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -7,8 +7,8 @@ import sharp from "sharp";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 export const MEDIA_DIRECTORY = path.resolve(__dirname, "../../uploads/media");
-const ALLOWED_EXTENSIONS = new Set([".jpg", ".png", ".webp"]);
-const STORED_NAME_PATTERN = /^[a-f0-9]{48}\.(jpg|png|webp)$/;
+const ALLOWED_EXTENSIONS = new Set([".jpg", ".png", ".webp", ".mp4"]);
+const STORED_NAME_PATTERN = /^[a-f0-9]{48}\.(jpg|png|webp|mp4)$/;
 const MAX_INPUT_PIXELS = 25_000_000;
 
 export async function ensureMediaDirectory() {
@@ -59,6 +59,23 @@ export function detectImageType(buffer) {
   return null;
 }
 
+export function detectMp4Type(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) {
+    return null;
+  }
+
+  const boxType = buffer.subarray(4, 8).toString("ascii");
+
+  if (boxType !== "ftyp") {
+    return null;
+  }
+
+  return {
+    mimeType: "video/mp4",
+    extension: ".mp4",
+    format: "mp4",
+  };
+}
 export async function sanitizeImageBuffer(buffer) {
   const detectedType = detectImageType(buffer);
   if (!detectedType) {
@@ -135,7 +152,7 @@ export async function sanitizeImageBuffer(buffer) {
 }
 export function generateStoredName(extension) {
   if (!ALLOWED_EXTENSIONS.has(extension)) {
-    throw new Error("Unsupported image extension");
+    throw new Error("Unsupported media extension");
   }
   const randomName = crypto.randomBytes(24).toString("hex");
   return `${randomName}${extension}`;

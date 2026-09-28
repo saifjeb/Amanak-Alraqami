@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 
 import {
   adminLoginController,
@@ -43,6 +43,7 @@ import {
   adminRestoreAdventureController,
   adminPermanentDeleteAdventureController,
   adminSetAdventureImageController,
+  adminSetAdventureVideoController,
 } from "../Controller/adventure.Controller.js";
 
 import {
@@ -217,6 +218,13 @@ router.patch(
   protectAdmin,
   validateIdParam("id", "adventure ID"),
   adminSetAdventureImageController,
+);
+
+router.patch(
+  "/adventures/:id/video",
+  protectAdmin,
+  validateIdParam("id", "adventure ID"),
+  adminSetAdventureVideoController,
 );
 
 router.get("/trash/adventures", protectAdmin, adminGetAdventureTrashController);
