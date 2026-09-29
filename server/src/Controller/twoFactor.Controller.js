@@ -485,3 +485,114 @@ export const adminRegenerateRecoveryCodesController = async (
     return next(error);
   }
 };
+
+
+export const parentRegenerateRecoveryCodesController = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const parent = req.parent;
+
+    if (!parent?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const token =
+      typeof req.body?.token === "string"
+        ? req.body.token.trim()
+        : "";
+
+    if (!/^\d{6}$/.test(token)) {
+      return res.status(400).json({
+        success: false,
+        code: "TWO_FACTOR_INVALID_FORMAT",
+        message:
+          "Authenticator code must contain exactly 6 digits.",
+      });
+    }
+
+    const settings = await getTwoFactorSettings(
+      "parent",
+      parent.id,
+    );
+
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: "Parent account not found",
+      });
+    }
+
+    if (
+      !settings.two_factor_enabled ||
+      !settings.two_factor_secret_encrypted
+    ) {
+      return res.status(400).json({
+        success: false,
+        code: "TWO_FACTOR_NOT_ENABLED",
+        message: "Two-step verification is not enabled.",
+      });
+    }
+
+    const verification = await verifyTwoFactorToken({
+      encryptedSecret:
+        settings.two_factor_secret_encrypted,
+      token,
+      lastUsedTimeStep:
+        settings.two_factor_last_used_step,
+    });
+
+    if (!verification.valid) {
+      return res.status(400).json({
+        success: false,
+        code: "TWO_FACTOR_INVALID_CODE",
+        message:
+          "Invalid or already used authenticator code.",
+      });
+    }
+
+    const recoveryCodes =
+      generateTwoFactorRecoveryCodes(8);
+
+    const recoveryCodeHashes =
+      recoveryCodes.map((code) =>
+        hashTwoFactorRecoveryCode({
+          accountType: "parent",
+          accountId: parent.id,
+          code,
+        }),
+      );
+
+    const rotated =
+      await rotateTwoFactorRecoveryCodes({
+        accountType: "parent",
+        accountId: parent.id,
+        timeStep: verification.timeStep,
+        recoveryCodeHashes,
+      });
+
+    if (!rotated) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Authenticator code was already used or recovery codes could not be regenerated.",
+      });
+    }
+
+    preventSensitiveResponseCaching(res);
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Recovery codes regenerated successfully.",
+      recoveryCodes,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

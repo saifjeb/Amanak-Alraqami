@@ -229,6 +229,22 @@ export const adminTwoFactorRecoveryLimiter = rateLimit({
 });
 
 
+export const parentTwoFactorRecoveryLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => {
+    return `parent-2fa-recovery:${req.parent.id}`;
+  },
+  message: {
+    success: false,
+    message:
+      "Too many recovery code regeneration attempts. Please try again after 10 minutes.",
+  },
+});
+
 export const parentTwoFactorChallengeLimiter =
   rateLimit({
     windowMs: 10 * 60 * 1000,

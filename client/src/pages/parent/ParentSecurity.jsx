@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, KeyRound, LockKeyhole, ShieldCheck } from "lucide-react";
+import { Check, Copy, KeyRound, LockKeyhole, RefreshCw, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import { api } from "../../api/api.js";
@@ -19,6 +19,9 @@ function ParentSecurity() {
   const [qrCode, setQrCode] = useState("");
   const [token, setToken] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState([]);
+  const [recoveryToken, setRecoveryToken] = useState("");
+  const [regeneratingRecovery, setRegeneratingRecovery] =
+    useState(false);
   const [starting, setStarting] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState("");
@@ -210,6 +213,88 @@ function ParentSecurity() {
       );
     } finally {
       setConfirming(false);
+    }
+  }
+
+  async function regenerateRecoveryCodes(event) {
+    event.preventDefault();
+
+    if (!/^\d{6}$/.test(recoveryToken)) {
+      setError(
+        pick(
+          "أدخل رمز المصادقة الحالي المكون من 6 أرقام.",
+          "Enter the current 6-digit authenticator code.",
+        ),
+      );
+
+      return;
+    }
+
+    try {
+      setRegeneratingRecovery(true);
+      setError("");
+      setSuccess("");
+
+      const response = await api.post(
+        "/parent/2fa/recovery-codes/regenerate",
+        {
+          token: recoveryToken,
+        },
+      );
+
+      const codes = Array.isArray(
+        response.data?.recoveryCodes,
+      )
+        ? response.data.recoveryCodes
+        : [];
+
+      if (codes.length === 0) {
+        throw new Error("Recovery codes were not returned.");
+      }
+
+      setRecoveryCodes(codes);
+      setRecoveryToken("");
+
+      setSuccess(
+        pick(
+          "تم إنشاء رموز استرداد جديدة. احفظها الآن في مكان آمن.",
+          "New recovery codes were generated. Save them somewhere safe now.",
+        ),
+      );
+    } catch (err) {
+      if (err.response?.status === 401) {
+        navigate("/parent/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      if (
+        err.response?.data?.code ===
+        "TWO_FACTOR_INVALID_CODE"
+      ) {
+        setRecoveryToken("");
+
+        setError(
+          pick(
+            "رمز المصادقة غير صالح أو تم استخدامه مسبقاً. انتظر رمزاً جديداً وحاول مرة أخرى.",
+            "The authenticator code is invalid or was already used. Wait for a new code and try again.",
+          ),
+        );
+
+        return;
+      }
+
+      setError(
+        err.response?.data?.message ||
+          pick(
+            "تعذر إنشاء رموز استرداد جديدة.",
+            "Could not generate new recovery codes.",
+          ),
+      );
+    } finally {
+      setRegeneratingRecovery(false);
     }
   }
 
@@ -408,6 +493,57 @@ function ParentSecurity() {
                 )}
               </div>
             </div>
+          )}
+
+          {twoFactorEnabled && recoveryCodes.length === 0 && (
+            <form
+              className="parent-security-confirm"
+              onSubmit={regenerateRecoveryCodes}
+              noValidate
+            >
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={recoveryToken}
+                onChange={(event) => {
+                  setRecoveryToken(
+                    event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6),
+                  );
+                  setError("");
+                  setSuccess("");
+                }}
+                maxLength={6}
+                placeholder="000000"
+                aria-label={pick(
+                  "رمز المصادقة",
+                  "Authenticator code",
+                )}
+              />
+
+              <button
+                type="submit"
+                className="parent-security-secondary"
+                disabled={
+                  regeneratingRecovery ||
+                  recoveryToken.length !== 6
+                }
+              >
+                <RefreshCw size={17} />
+
+                {regeneratingRecovery
+                  ? pick(
+                      "جارٍ إنشاء الرموز...",
+                      "Generating codes...",
+                    )
+                  : pick(
+                      "إنشاء رموز استرداد جديدة",
+                      "Regenerate Recovery Codes",
+                    )}
+              </button>
+            </form>
           )}
 
           {!twoFactorEnabled && !setup && (
