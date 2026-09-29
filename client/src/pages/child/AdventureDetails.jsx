@@ -95,6 +95,7 @@ function AdventureDetails() {
             </div>
 
             <video
+              key={videoUrl}
               className="details-video-player"
               controls
               preload="metadata"
