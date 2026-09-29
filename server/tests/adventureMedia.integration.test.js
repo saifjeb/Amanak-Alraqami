@@ -12,9 +12,11 @@ import pool from "../src/config/db.js";
 
 let adminToken;
 let childToken;
+let childToken1114;
 let adventureId;
 let imageMediaId;
 let videoMediaId;
+let secondVideoMediaId;
 let trashedVideoMediaId;
 
 before(async () => {
@@ -101,6 +103,42 @@ before(async () => {
       {
         id: childId,
         nickname: "AdventureVideoChild",
+        type: "child",
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      },
+    );
+
+  const child1114Result =
+    await pool.query(
+      `
+      INSERT INTO users (
+        nickname,
+        hashed_password,
+        age_group,
+        avatar
+      )
+      VALUES ($1, $2, $3, $4)
+      RETURNING id;
+      `,
+      [
+        "AdventureVideoTeen",
+        "test-password-hash",
+        "11-14",
+        "avatar2",
+      ],
+    );
+
+  const child1114Id =
+    child1114Result.rows[0].id;
+
+  childToken1114 =
+    jwt.sign(
+      {
+        id: child1114Id,
+        nickname: "AdventureVideoTeen",
         type: "child",
       },
       process.env.JWT_SECRET,
@@ -218,6 +256,40 @@ before(async () => {
 
   videoMediaId =
     videoResult.rows[0].id;
+
+  const secondVideoResult =
+    await pool.query(
+      `
+      INSERT INTO media (
+        original_name,
+        stored_name,
+        mime_type,
+        file_size,
+        file_path,
+        uploaded_by_admin_id
+      )
+      VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6
+      )
+      RETURNING id;
+      `,
+      [
+        "adventure-video-11-14.mp4",
+        `${"d".repeat(48)}.mp4`,
+        "video/mp4",
+        2048,
+        `uploads/media/${"d".repeat(48)}.mp4`,
+        adminId,
+      ],
+    );
+
+  secondVideoMediaId =
+    secondVideoResult.rows[0].id;
 
   const trashedVideoResult =
     await pool.query(
@@ -342,7 +414,7 @@ test(
 );
 
 test(
-  "MP4 can be assigned to adventure video slot",
+  "missing age group is rejected for adventure video",
   async () => {
     const response =
       await adminPatch(
@@ -351,11 +423,66 @@ test(
         .send({
           media_id: videoMediaId,
         })
+        .expect(400);
+
+    assert.equal(
+      response.body.success,
+      false,
+    );
+
+    assert.equal(
+      response.body.message,
+      "Age group must be 8-10 or 11-14",
+    );
+  },
+);
+
+test(
+  "invalid age group is rejected for adventure video",
+  async () => {
+    const response =
+      await adminPatch(
+        `/api/admin/adventures/${adventureId}/video`,
+      )
+        .send({
+          media_id: videoMediaId,
+          age_group: "15-17",
+        })
+        .expect(400);
+
+    assert.equal(
+      response.body.success,
+      false,
+    );
+
+    assert.equal(
+      response.body.message,
+      "Age group must be 8-10 or 11-14",
+    );
+  },
+);
+
+test(
+  "MP4 can be assigned to 8-10 adventure video slot",
+  async () => {
+    const response =
+      await adminPatch(
+        `/api/admin/adventures/${adventureId}/video`,
+      )
+        .send({
+          media_id: videoMediaId,
+          age_group: "8-10",
+        })
         .expect(200);
 
     assert.equal(
       response.body.success,
       true,
+    );
+
+    assert.equal(
+      response.body.adventure.age_group,
+      "8-10",
     );
 
     assert.equal(
@@ -371,6 +498,36 @@ test(
 );
 
 test(
+  "MP4 can be assigned to 11-14 adventure video slot",
+  async () => {
+    const response =
+      await adminPatch(
+        `/api/admin/adventures/${adventureId}/video`,
+      )
+        .send({
+          media_id: secondVideoMediaId,
+          age_group: "11-14",
+        })
+        .expect(200);
+
+    assert.equal(
+      response.body.success,
+      true,
+    );
+
+    assert.equal(
+      response.body.adventure.age_group,
+      "11-14",
+    );
+
+    assert.equal(
+      response.body.adventure.video_media_id,
+      secondVideoMediaId,
+    );
+  },
+);
+
+test(
   "PNG cannot be assigned to adventure video slot",
   async () => {
     const response =
@@ -379,6 +536,7 @@ test(
       )
         .send({
           media_id: imageMediaId,
+          age_group: "8-10",
         })
         .expect(400);
 
@@ -404,6 +562,7 @@ test(
         .send({
           media_id:
             trashedVideoMediaId,
+          age_group: "8-10",
         })
         .expect(409);
 
@@ -420,16 +579,75 @@ test(
 );
 
 test(
-  "public adventure response exposes assigned video",
+  "age-specific adventure videos stay independent",
   async () => {
+    await pool.query(
+      `
+      DELETE FROM adventure_videos
+      WHERE adventure_id = $1;
+      `,
+      [adventureId],
+    );
+
     await adminPatch(
       `/api/admin/adventures/${adventureId}/video`,
     )
       .send({
         media_id: videoMediaId,
+        age_group: "8-10",
       })
       .expect(200);
 
+    await adminPatch(
+      `/api/admin/adventures/${adventureId}/video`,
+    )
+      .send({
+        media_id: secondVideoMediaId,
+        age_group: "11-14",
+      })
+      .expect(200);
+
+    const mappings =
+      await pool.query(
+        `
+        SELECT
+          age_group,
+          media_id
+        FROM adventure_videos
+        WHERE adventure_id = $1
+        ORDER BY age_group ASC;
+        `,
+        [adventureId],
+      );
+
+    assert.equal(
+      mappings.rows.length,
+      2,
+    );
+
+    const mappingByAge =
+      Object.fromEntries(
+        mappings.rows.map((row) => [
+          row.age_group,
+          Number(row.media_id),
+        ]),
+      );
+
+    assert.equal(
+      mappingByAge["8-10"],
+      Number(videoMediaId),
+    );
+
+    assert.equal(
+      mappingByAge["11-14"],
+      Number(secondVideoMediaId),
+    );
+  },
+);
+
+test(
+  "8-10 child receives only the 8-10 adventure video",
+  async () => {
     const response =
       await request(app)
         .get(
@@ -442,13 +660,97 @@ test(
         .expect(200);
 
     assert.equal(
-      response.body.adventure.video_media_id,
-      videoMediaId,
+      Number(
+        response.body.adventure.video_media_id,
+      ),
+      Number(videoMediaId),
     );
 
     assert.equal(
       response.body.adventure.video_url,
       `/api/media/${videoMediaId}`,
+    );
+  },
+);
+
+test(
+  "11-14 child receives only the 11-14 adventure video",
+  async () => {
+    const response =
+      await request(app)
+        .get(
+          `/api/adventures/${adventureId}`,
+        )
+        .set(
+          "Cookie",
+          `accessToken=${childToken1114}`,
+        )
+        .expect(200);
+
+    assert.equal(
+      Number(
+        response.body.adventure.video_media_id,
+      ),
+      Number(secondVideoMediaId),
+    );
+
+    assert.equal(
+      response.body.adventure.video_url,
+      `/api/media/${secondVideoMediaId}`,
+    );
+  },
+);
+
+test(
+  "adventure list also returns video for the logged-in age group",
+  async () => {
+    const youngerResponse =
+      await request(app)
+        .get("/api/adventures")
+        .set(
+          "Cookie",
+          `accessToken=${childToken}`,
+        )
+        .expect(200);
+
+    const olderResponse =
+      await request(app)
+        .get("/api/adventures")
+        .set(
+          "Cookie",
+          `accessToken=${childToken1114}`,
+        )
+        .expect(200);
+
+    const youngerAdventure =
+      youngerResponse.body.adventures.find(
+        (item) =>
+          Number(item.id) ===
+          Number(adventureId),
+      );
+
+    const olderAdventure =
+      olderResponse.body.adventures.find(
+        (item) =>
+          Number(item.id) ===
+          Number(adventureId),
+      );
+
+    assert.ok(youngerAdventure);
+    assert.ok(olderAdventure);
+
+    assert.equal(
+      Number(
+        youngerAdventure.video_media_id,
+      ),
+      Number(videoMediaId),
+    );
+
+    assert.equal(
+      Number(
+        olderAdventure.video_media_id,
+      ),
+      Number(secondVideoMediaId),
     );
   },
 );

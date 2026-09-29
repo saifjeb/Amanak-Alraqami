@@ -1,66 +1,6 @@
 ﻿import pool from "../config/db.js";
 
-export const getAllAdventures = async () => {
-  const result = await pool.query(`
-    SELECT
-      a.id,
-      a.title_ar,
-      a.title_en,
-      a.description_ar,
-      a.description_en,
-      a.icon,
-      a.badge_name,
-      a.completion_points,
-      a.display_order,
-      a.is_active,
-      a.created_at,
-
-      CASE
-        WHEN im.id IS NOT NULL
-          AND im.deleted_at IS NULL
-        THEN im.id
-        ELSE NULL
-      END AS image_media_id,
-
-      CASE
-        WHEN im.id IS NOT NULL
-          AND im.deleted_at IS NULL
-        THEN '/api/media/' || im.id
-        ELSE NULL
-      END AS image_url,
-
-      CASE
-        WHEN vm.id IS NOT NULL
-          AND vm.deleted_at IS NULL
-        THEN vm.id
-        ELSE NULL
-      END AS video_media_id,
-
-      CASE
-        WHEN vm.id IS NOT NULL
-          AND vm.deleted_at IS NULL
-        THEN '/api/media/' || vm.id
-        ELSE NULL
-      END AS video_url
-
-    FROM adventures a
-
-    LEFT JOIN media im
-      ON im.id = a.image_media_id
-
-    LEFT JOIN media vm
-      ON vm.id = a.video_media_id
-
-    WHERE a.is_active = TRUE
-      AND a.deleted_at IS NULL
-
-    ORDER BY a.display_order ASC;
-  `);
-
-  return result.rows;
-};
-
-export const getAdventureById = async (id) => {
+export const getAllAdventures = async (ageGroup) => {
   const result = await pool.query(
     `
     SELECT
@@ -109,8 +49,82 @@ export const getAdventureById = async (id) => {
     LEFT JOIN media im
       ON im.id = a.image_media_id
 
+    LEFT JOIN adventure_videos av
+      ON av.adventure_id = a.id
+      AND av.age_group = $1
+
     LEFT JOIN media vm
-      ON vm.id = a.video_media_id
+      ON vm.id = av.media_id
+
+    WHERE a.is_active = TRUE
+      AND a.deleted_at IS NULL
+
+    ORDER BY a.display_order ASC;
+    `,
+    [ageGroup],
+  );
+
+  return result.rows;
+};
+
+export const getAdventureById = async (
+  id,
+  ageGroup = null,
+) => {
+  const result = await pool.query(
+    `
+    SELECT
+      a.id,
+      a.title_ar,
+      a.title_en,
+      a.description_ar,
+      a.description_en,
+      a.icon,
+      a.badge_name,
+      a.completion_points,
+      a.display_order,
+      a.is_active,
+      a.created_at,
+
+      CASE
+        WHEN im.id IS NOT NULL
+          AND im.deleted_at IS NULL
+        THEN im.id
+        ELSE NULL
+      END AS image_media_id,
+
+      CASE
+        WHEN im.id IS NOT NULL
+          AND im.deleted_at IS NULL
+        THEN '/api/media/' || im.id
+        ELSE NULL
+      END AS image_url,
+
+      CASE
+        WHEN vm.id IS NOT NULL
+          AND vm.deleted_at IS NULL
+        THEN vm.id
+        ELSE NULL
+      END AS video_media_id,
+
+      CASE
+        WHEN vm.id IS NOT NULL
+          AND vm.deleted_at IS NULL
+        THEN '/api/media/' || vm.id
+        ELSE NULL
+      END AS video_url
+
+    FROM adventures a
+
+    LEFT JOIN media im
+      ON im.id = a.image_media_id
+
+    LEFT JOIN adventure_videos av
+      ON av.adventure_id = a.id
+      AND av.age_group = $2
+
+    LEFT JOIN media vm
+      ON vm.id = av.media_id
 
     WHERE a.id = $1
       AND a.is_active = TRUE
@@ -118,7 +132,7 @@ export const getAdventureById = async (id) => {
 
     LIMIT 1;
     `,
-    [id],
+    [id, ageGroup],
   );
 
   return result.rows[0] || null;
@@ -140,6 +154,7 @@ export const getAllAdventuresAdmin = async () => {
       a.created_at,
       a.deleted_at,
       a.image_media_id,
+
       a.video_media_id,
 
       CASE
@@ -150,19 +165,61 @@ export const getAllAdventuresAdmin = async () => {
       END AS image_url,
 
       CASE
-        WHEN vm.id IS NOT NULL
-          AND vm.deleted_at IS NULL
-        THEN '/api/media/' || vm.id
+        WHEN legacy_vm.id IS NOT NULL
+          AND legacy_vm.deleted_at IS NULL
+        THEN '/api/media/' || legacy_vm.id
         ELSE NULL
-      END AS video_url
+      END AS video_url,
+
+      CASE
+        WHEN vm810.id IS NOT NULL
+          AND vm810.deleted_at IS NULL
+        THEN vm810.id
+        ELSE NULL
+      END AS video_8_10_media_id,
+
+      CASE
+        WHEN vm810.id IS NOT NULL
+          AND vm810.deleted_at IS NULL
+        THEN '/api/media/' || vm810.id
+        ELSE NULL
+      END AS video_8_10_url,
+
+      CASE
+        WHEN vm1114.id IS NOT NULL
+          AND vm1114.deleted_at IS NULL
+        THEN vm1114.id
+        ELSE NULL
+      END AS video_11_14_media_id,
+
+      CASE
+        WHEN vm1114.id IS NOT NULL
+          AND vm1114.deleted_at IS NULL
+        THEN '/api/media/' || vm1114.id
+        ELSE NULL
+      END AS video_11_14_url
 
     FROM adventures a
 
     LEFT JOIN media im
       ON im.id = a.image_media_id
 
-    LEFT JOIN media vm
-      ON vm.id = a.video_media_id
+    LEFT JOIN media legacy_vm
+      ON legacy_vm.id = a.video_media_id
+
+    LEFT JOIN adventure_videos av810
+      ON av810.adventure_id = a.id
+      AND av810.age_group = '8-10'
+
+    LEFT JOIN media vm810
+      ON vm810.id = av810.media_id
+
+    LEFT JOIN adventure_videos av1114
+      ON av1114.adventure_id = a.id
+      AND av1114.age_group = '11-14'
+
+    LEFT JOIN media vm1114
+      ON vm1114.id = av1114.media_id
 
     WHERE a.deleted_at IS NULL
 
@@ -171,6 +228,7 @@ export const getAllAdventuresAdmin = async () => {
 
   return result.rows;
 };
+
 export const createAdventure = async ({
   titleAr,titleEn,descriptionAr,descriptionEn,icon,badgeName,completionPoints,displayOrder,isActive,}) => {
   const result = await pool.query(
@@ -304,21 +362,45 @@ export const setAdventureImage = async (adventureId, mediaId) => {
 };
 export const setAdventureVideo = async (
   adventureId,
+  ageGroup,
   mediaId,
 ) => {
   const result = await pool.query(
     `
-    UPDATE adventures
-    SET video_media_id = $1
-    WHERE id = $2
-      AND deleted_at IS NULL
-    RETURNING
+    INSERT INTO adventure_videos (
+      adventure_id,
+      age_group,
+      media_id,
+      updated_at
+    )
+
+    SELECT
       id,
-      title_ar,
-      title_en,
-      video_media_id;
+      $2,
+      $3,
+      CURRENT_TIMESTAMP
+    FROM adventures
+    WHERE id = $1
+      AND deleted_at IS NULL
+
+    ON CONFLICT (
+      adventure_id,
+      age_group
+    )
+    DO UPDATE SET
+      media_id = EXCLUDED.media_id,
+      updated_at = CURRENT_TIMESTAMP
+
+    RETURNING
+      adventure_id AS id,
+      age_group,
+      media_id AS video_media_id;
     `,
-    [mediaId, adventureId],
+    [
+      adventureId,
+      ageGroup,
+      mediaId,
+    ],
   );
 
   return result.rows[0] || null;

@@ -86,6 +86,8 @@ function AdventureManagement() {
 
   const [videoTarget, setVideoTarget] = useState(null);
 
+  const [videoAgeGroup, setVideoAgeGroup] = useState(null);
+
   const [media, setMedia] = useState([]);
 
   const [loadingMedia, setLoadingMedia] = useState(false);
@@ -537,8 +539,14 @@ function AdventureManagement() {
     }
   }
 
-  async function openVideoPicker(adventure) {
+  async function openVideoPicker(adventure, ageGroup) {
+    if (!["8-10", "11-14"].includes(ageGroup)) {
+      setError("Invalid video age group.");
+      return;
+    }
+
     setVideoTarget(adventure);
+    setVideoAgeGroup(ageGroup);
     setVideoModalOpen(true);
     setLoadingMedia(true);
 
@@ -565,7 +573,7 @@ function AdventureManagement() {
   }
 
   async function assignVideo(mediaId) {
-    if (!videoTarget) {
+    if (!videoTarget || !videoAgeGroup) {
       return;
     }
 
@@ -576,12 +584,16 @@ function AdventureManagement() {
 
       await api.patch(`/admin/adventures/${videoTarget.id}/video`, {
         media_id: Number(mediaId),
+        age_group: videoAgeGroup,
       });
 
-      setSuccess("Adventure video updated.");
+      setSuccess(
+        `Adventure video for age ${videoAgeGroup} updated.`,
+      );
 
       setVideoModalOpen(false);
       setVideoTarget(null);
+      setVideoAgeGroup(null);
 
       await loadData();
     } catch (err) {
@@ -795,9 +807,23 @@ function AdventureManagement() {
                         <button
                           type="button"
                           className="video"
-                          onClick={() => openVideoPicker(adventure)}
+                          onClick={() =>
+                            openVideoPicker(adventure, "8-10")
+                          }
                         >
-                          Video
+                          Video 8-10
+                          {adventure.video_8_10_media_id ? " ✓" : ""}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="video"
+                          onClick={() =>
+                            openVideoPicker(adventure, "11-14")
+                          }
+                        >
+                          Video 11-14
+                          {adventure.video_11_14_media_id ? " ✓" : ""}
                         </button>
 
                         <button
@@ -1065,7 +1091,9 @@ function AdventureManagement() {
               <div>
                 <span>VIDEO LIBRARY</span>
 
-                <h2>Choose Adventure Video</h2>
+                <h2>
+                  Choose Video - Age {videoAgeGroup}
+                </h2>
 
                 <p>{videoTarget?.title_en}</p>
               </div>
@@ -1075,6 +1103,7 @@ function AdventureManagement() {
                 onClick={() => {
                   setVideoModalOpen(false);
                   setVideoTarget(null);
+                  setVideoAgeGroup(null);
                 }}
               >
                 Close

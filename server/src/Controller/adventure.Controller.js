@@ -1,5 +1,6 @@
 ﻿import {getAllAdventures,getAdventureById,getAllAdventuresAdmin,createAdventure,updateAdventure,moveAdventureToTrash,getTrashedAdventures,restoreAdventure,permanentlyDeleteAdventure,setAdventureImage,setAdventureVideo} from "../Model/adventure.Model.js";
 import {getMediaById} from "../Model/media.Model.js";
+import { getUserById } from "../Model/user.Model.js";
 const handleAdventureConflict = (error,res,next) => {
   if (error.code !== "23505") {
     return next(error);
@@ -30,10 +31,25 @@ const handleAdventureConflict = (error,res,next) => {
 export const getAllAdventuresController =
   async (req, res, next) => {
     try {
-      const adventures = await getAllAdventures();
+      const user =
+        await getUserById(req.user.id);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      const adventures =
+        await getAllAdventures(
+          user.age_group,
+        );
+
       return res.status(200).json({
         success: true,
-        message: "Adventures fetched successfully",
+        message:
+          "Adventures fetched successfully",
         adventures,
       });
     } catch (error) {
@@ -45,16 +61,34 @@ export const getAdventureByIdController =
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const adventure = await getAdventureById(id);
+
+      const user =
+        await getUserById(req.user.id);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      const adventure =
+        await getAdventureById(
+          id,
+          user.age_group,
+        );
+
       if (!adventure) {
         return res.status(404).json({
           success: false,
           message: "Adventure not found",
         });
       }
+
       return res.status(200).json({
         success: true,
-        message: "Adventure fetched successfully",
+        message:
+          "Adventure fetched successfully",
         adventure,
       });
     } catch (error) {
@@ -345,6 +379,11 @@ export const adminSetAdventureVideoController =
       const mediaId =
         Number(req.body.media_id);
 
+      const ageGroup =
+        String(
+          req.body.age_group || "",
+        );
+
       if (
         !Number.isInteger(adventureId) ||
         adventureId <= 0
@@ -362,6 +401,18 @@ export const adminSetAdventureVideoController =
         return res.status(400).json({
           success: false,
           message: "Invalid media ID",
+        });
+      }
+
+      if (
+        !["8-10", "11-14"].includes(
+          ageGroup,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Age group must be 8-10 or 11-14",
         });
       }
 
@@ -396,6 +447,7 @@ export const adminSetAdventureVideoController =
       const adventure =
         await setAdventureVideo(
           adventureId,
+          ageGroup,
           mediaId,
         );
 
