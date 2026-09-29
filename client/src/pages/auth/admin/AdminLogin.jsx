@@ -64,7 +64,7 @@ function AdminLogin() {
         <p>
           {pick(
             "جارٍ التحقق من جلسة الإدارة...",
-            "Checking admin session..."
+            "Starting Amanak secure server... This can take up to a minute on the first visit."
           )}
         </p>
       </main>

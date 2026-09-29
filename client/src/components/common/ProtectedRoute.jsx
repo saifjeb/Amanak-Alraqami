@@ -11,7 +11,7 @@ function ProtectedRoute({ children, allowedRole }) {
       <div style={styles.loadingPage}>
         <div style={styles.spinner}></div>
 
-        <p style={styles.loadingText}>Checking your session...</p>
+        <p style={styles.loadingText}>Starting Amanak secure server... This can take up to a minute on the first visit.</p>
       </div>
     );
   }

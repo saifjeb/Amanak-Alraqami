@@ -44,7 +44,7 @@ function ParentLogin() {
       <main className="auth-loading">
         <div className="auth-loading-spinner" />
 
-        <p>{pick("جارٍ التحقق من الجلسة...", "Checking your session...")}</p>
+        <p>{pick("جارٍ التحقق من الجلسة...", "Starting Amanak secure server... This can take up to a minute on the first visit.")}</p>
       </main>
     );
   }
