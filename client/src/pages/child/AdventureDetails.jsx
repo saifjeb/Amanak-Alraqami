@@ -6,7 +6,7 @@ import ChildNav from "../../components/child/ChildNav.jsx";
 import { getAdventureFallbackCover } from "../../utils/adventureVisuals.js";
 import "./AdventureDetails.css";
 
-const API_ORIGIN = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/api\/?$/, "");
+const API_ORIGIN = ((import.meta.env.PROD ? "/api" : "http://localhost:3000/api")).replace(/\/api\/?$/, "");
 const getMediaUrl = (value) => !value ? null : /^https?:\/\//.test(value) ? value : `${API_ORIGIN}${value.startsWith("/") ? "" : "/"}${value}`;
 function AdventureDetails() {
   const { adventureId } = useParams();

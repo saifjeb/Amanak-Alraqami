@@ -9,7 +9,7 @@ import ChildNav from "../../components/child/ChildNav.jsx";
 import { getAdventureFallbackCover } from "../../utils/adventureVisuals.js";
 import "./ChildDashboard.css";
 
-const API_ORIGIN = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/api\/?$/, "");
+const API_ORIGIN = ((import.meta.env.PROD ? "/api" : "http://localhost:3000/api")).replace(/\/api\/?$/, "");
 
 function getMediaUrl(value) {
   if (!value) return null;

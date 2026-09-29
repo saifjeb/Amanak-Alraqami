@@ -85,7 +85,7 @@ function ParentVerifyEmail() {
       setSuccess("");
       setResendMessage("");
 
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      const apiUrl = (import.meta.env.PROD ? "" : "http://localhost:3000");
 
       const response = await fetch(`${apiUrl}/api/parent/verify-email`, {
         method: "POST",
@@ -169,7 +169,7 @@ function ParentVerifyEmail() {
       setSuccess("");
       setResendMessage("");
 
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      const apiUrl = (import.meta.env.PROD ? "" : "http://localhost:3000");
 
       const response = await fetch(
         `${apiUrl}/api/parent/resend-verification-code`,

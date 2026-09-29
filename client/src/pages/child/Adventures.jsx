@@ -9,7 +9,7 @@ import { getAdventureFallbackCover } from "../../utils/adventureVisuals.js";
 import "./Adventures.css";
 
 const API_ORIGIN = (
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api"
+  (import.meta.env.PROD ? "/api" : "http://localhost:3000/api")
 ).replace(/\/api\/?$/, "");
 
 function getMediaUrl(value) {

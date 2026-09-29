@@ -69,7 +69,7 @@ function formatDate(value) {
 }
 
 function resolveMediaUrl(item) {
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+  const apiUrl = (import.meta.env.PROD ? "/api" : "http://localhost:3000/api");
   const serverUrl = apiUrl.replace(/\/api\/?$/, "");
   const candidate = item?.image_url || item?.public_url || item?.url;
 
