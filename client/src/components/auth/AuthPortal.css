@@ -535,3 +535,82 @@ html[dir="rtl"] .auth-portal-parent .auth-portal-visual img {
     transform: translateY(-55px);
   }
 }
+/* Final parent auth family image fix */
+.auth-portal-parent .auth-portal-visual {
+  width: 100%;
+  height: 310px;
+  min-height: 310px;
+  margin-top: 24px;
+  overflow: hidden;
+  border-radius: 26px;
+  background: linear-gradient(
+    135deg,
+    #eef8ff,
+    #fff7ed
+  );
+}
+
+.auth-portal-parent .auth-portal-visual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: none;
+  object-fit: cover;
+  object-position: center 28%;
+  transform: none;
+  border-radius: 26px;
+  filter: none;
+}
+
+html[dir="rtl"]
+.auth-portal-parent
+.auth-portal-visual img {
+  transform: none;
+}
+
+@media (min-width: 961px) and (max-width: 1366px) {
+  .auth-portal-parent .auth-portal-visual {
+    height: 300px;
+    min-height: 300px;
+  }
+
+  .auth-portal-parent .auth-portal-visual img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 28%;
+    transform: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .auth-portal-parent .auth-portal-visual {
+    height: 280px;
+    min-height: 280px;
+  }
+
+  .auth-portal-parent .auth-portal-visual img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 30%;
+    transform: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-portal-parent .auth-portal-visual {
+    height: 230px;
+    min-height: 230px;
+    margin-top: 18px;
+  }
+
+  .auth-portal-parent .auth-portal-visual img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 30%;
+    transform: none;
+  }
+}
