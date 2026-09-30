@@ -68,3 +68,19 @@ html[dir="rtl"]
     transform: none;
   }
 }
+
+/* Linked children refresh */
+.parent-section-heading > button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.parent-refresh-spin {
+  animation: parent-refresh-spin 0.75s linear infinite;
+}
+
+@keyframes parent-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
