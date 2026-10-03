@@ -35,6 +35,10 @@ const publicAdmin = (admin) => {
     id: admin.id,
     name: admin.name,
     email: admin.email,
+    role: admin.role,
+    is_enabled: admin.is_enabled,
+    access_expires_at:
+      admin.access_expires_at || null,
     created_at: admin.created_at,
   };
 };
@@ -168,6 +172,54 @@ export const adminLoginController = async (req, res, next) => {
         success: false,
         message: "Invalid credentials",
       });
+    }
+
+    if (admin.is_enabled !== true) {
+      await writeLoginAudit({
+        req,
+        admin,
+        action: "admin.login_blocked",
+        statusCode: 403,
+        metadata: {
+          reason: "account_disabled",
+        },
+      });
+
+      return res.status(403).json({
+        success: false,
+        code: "ADMIN_ACCOUNT_DISABLED",
+        message:
+          "This administrator account is disabled.",
+      });
+    }
+
+    if (admin.access_expires_at) {
+      const expiresAt =
+        new Date(
+          admin.access_expires_at,
+        ).getTime();
+
+      if (
+        !Number.isFinite(expiresAt) ||
+        expiresAt <= Date.now()
+      ) {
+        await writeLoginAudit({
+          req,
+          admin,
+          action: "admin.login_blocked",
+          statusCode: 403,
+          metadata: {
+            reason: "access_expired",
+          },
+        });
+
+        return res.status(403).json({
+          success: false,
+          code: "ADMIN_ACCESS_EXPIRED",
+          message:
+            "This administrator access has expired.",
+        });
+      }
     }
 
     const twoFactorSettings = await getTwoFactorSettings("admin", admin.id);

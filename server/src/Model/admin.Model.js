@@ -8,6 +8,9 @@ export const getAdminByEmail = async (email) => {
       name,
       email,
       hashed_password,
+      role,
+      is_enabled,
+      access_expires_at,
       created_at
     FROM admins
     WHERE LOWER(email) = LOWER($1)
@@ -27,6 +30,9 @@ export const getAdminById = async (id) => {
       id,
       name,
       email,
+      role,
+      is_enabled,
+      access_expires_at,
       created_at
     FROM admins
     WHERE id = $1

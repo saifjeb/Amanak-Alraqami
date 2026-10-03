@@ -31,7 +31,10 @@ import { validate } from "../Middleware/validate.Middleware.js";
 
 import { validateIdParam } from "../Middleware/idParam.Middleware.js";
 
-import { protectAdmin } from "../Middleware/adminonly.Middleware.js";
+import {
+  protectAdmin,
+  requireFullAdmin,
+} from "../Middleware/adminonly.Middleware.js";
 
 import { auditAdminAction } from "../Middleware/adminAudit.Middleware.js";
 
@@ -136,12 +139,14 @@ router.post("/logout", protectAdmin, adminLogoutController);
 router.get(
   "/2fa/status",
   protectAdmin,
+  requireFullAdmin,
   adminTwoFactorStatusController,
 );
 
 router.post(
   "/2fa/setup",
   protectAdmin,
+  requireFullAdmin,
   adminTwoFactorSetupLimiter,
   adminTwoFactorSetupController,
 );
@@ -149,6 +154,7 @@ router.post(
 router.post(
   "/2fa/confirm",
   protectAdmin,
+  requireFullAdmin,
   adminTwoFactorConfirmLimiter,
   adminTwoFactorConfirmController,
 );
@@ -156,6 +162,7 @@ router.post(
 router.post(
   "/2fa/recovery-codes/regenerate",
   protectAdmin,
+  requireFullAdmin,
   adminTwoFactorRecoveryLimiter,
   adminRegenerateRecoveryCodesController,
 );
@@ -164,7 +171,12 @@ router.get("/dashboard", protectAdmin, getAdminDashboardController);
 
 router.get("/analytics", protectAdmin, getAdminAnalyticsController);
 
-router.get("/security/audit", protectAdmin, getAdminAuditLogsController);
+router.get(
+  "/security/audit",
+  protectAdmin,
+  requireFullAdmin,
+  getAdminAuditLogsController,
+);
 
 router.get("/students/status", protectAdmin, getAdminStudentStatusesController);
 
@@ -192,6 +204,7 @@ router.patch(
 router.delete(
   "/students/:id/permanent",
   protectAdmin,
+  requireFullAdmin,
   validateIdParam("id", "student ID"),
   permanentlyDeleteStudentController,
 );
@@ -246,6 +259,7 @@ router.patch(
 router.delete(
   "/trash/adventures/:id/permanent",
   protectAdmin,
+  requireFullAdmin,
   validateIdParam("id", "adventure ID"),
   adminPermanentDeleteAdventureController,
 );
@@ -293,6 +307,7 @@ router.patch(
 router.delete(
   "/trash/questions/:id/permanent",
   protectAdmin,
+  requireFullAdmin,
   validateIdParam("id", "question ID"),
   adminPermanentDeleteQuestionController,
 );
@@ -325,6 +340,7 @@ router.patch(
 router.delete(
   "/trash/media/:id/permanent",
   protectAdmin,
+  requireFullAdmin,
   validateIdParam("id", "media ID"),
   adminPermanentDeleteMediaController,
 );
