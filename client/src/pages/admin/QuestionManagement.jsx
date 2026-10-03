@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api } from "../../api/api.js";
+import { useAuth } from "../../hooks/useAuth.js";
 import AdminNav from "../../components/admin/AdminNav.jsx";
 
 import "./QuestionManagement.css";
@@ -98,6 +99,11 @@ function markQuestionImageUnavailable(event) {
 
 function QuestionManagement() {
   const navigate = useNavigate();
+
+  const { user } = useAuth();
+
+  const isFullAdmin =
+    user?.role === "admin";
 
   const [questions, setQuestions] = useState([]);
 
@@ -912,6 +918,7 @@ function QuestionManagement() {
                           ↩ Restore
                         </button>
 
+                        {isFullAdmin && (
                         <button
                           type="button"
                           className="permanent"
@@ -920,6 +927,7 @@ function QuestionManagement() {
                         >
                           ⛔ Delete Forever
                         </button>
+                        )}
                       </div>
                     ) : (
                       <div className="question-card-actions">

@@ -11,12 +11,12 @@ import app from "../src/app.js";
 import pool from "../src/config/db.js";
 
 const EMAIL_PREFIX =
-  "demo-admin-authorization-test";
+  "test-admin-authorization-test";
 
 let fullAdminId;
-let demoAdminId;
-let disabledDemoAdminId;
-let expiredDemoAdminId;
+let testAdminId;
+let disabledTestAdminId;
+let expiredTestAdminId;
 
 function createAdminToken(id, email) {
   return jwt.sign(
@@ -101,12 +101,12 @@ before(async () => {
       role: "admin",
     });
 
-  demoAdminId =
+  testAdminId =
     await insertAdmin({
-      name: "Demo Admin Test",
+      name: "Test Admin Test",
       email:
         `${EMAIL_PREFIX}-demo@example.com`,
-      role: "demo_admin",
+      role: "test_admin",
       expiresAt:
         new Date(
           Date.now() +
@@ -114,23 +114,23 @@ before(async () => {
         ),
     });
 
-  disabledDemoAdminId =
+  disabledTestAdminId =
     await insertAdmin({
       name:
-        "Disabled Demo Admin Test",
+        "Disabled Test Admin Test",
       email:
         `${EMAIL_PREFIX}-disabled@example.com`,
-      role: "demo_admin",
+      role: "test_admin",
       isEnabled: false,
     });
 
-  expiredDemoAdminId =
+  expiredTestAdminId =
     await insertAdmin({
       name:
-        "Expired Demo Admin Test",
+        "Expired Test Admin Test",
       email:
         `${EMAIL_PREFIX}-expired@example.com`,
-      role: "demo_admin",
+      role: "test_admin",
       expiresAt:
         new Date(
           Date.now() -
@@ -182,14 +182,14 @@ test(
 );
 
 test(
-  "demo admin can access /admin/me and exposes demo role",
+  "test admin can access /admin/me and exposes test role",
   async () => {
     const email =
       `${EMAIL_PREFIX}-demo@example.com`;
 
     const token =
       createAdminToken(
-        demoAdminId,
+        testAdminId,
         email,
       );
 
@@ -209,7 +209,7 @@ test(
 
     assert.equal(
       response.body.admin.role,
-      "demo_admin",
+      "test_admin",
     );
 
     assert.equal(
@@ -220,14 +220,14 @@ test(
 );
 
 test(
-  "demo admin can access dashboard",
+  "test admin can access dashboard",
   async () => {
     const email =
       `${EMAIL_PREFIX}-demo@example.com`;
 
     const token =
       createAdminToken(
-        demoAdminId,
+        testAdminId,
         email,
       );
 
@@ -242,14 +242,14 @@ test(
 );
 
 test(
-  "demo admin can access adventures",
+  "test admin can access adventures",
   async () => {
     const email =
       `${EMAIL_PREFIX}-demo@example.com`;
 
     const token =
       createAdminToken(
-        demoAdminId,
+        testAdminId,
         email,
       );
 
@@ -264,14 +264,14 @@ test(
 );
 
 test(
-  "demo admin cannot access security audit",
+  "test admin cannot access security audit",
   async () => {
     const email =
       `${EMAIL_PREFIX}-demo@example.com`;
 
     const token =
       createAdminToken(
-        demoAdminId,
+        testAdminId,
         email,
       );
 
@@ -299,14 +299,14 @@ test(
 );
 
 test(
-  "demo admin cannot permanently delete a student",
+  "test admin cannot permanently delete a student",
   async () => {
     const email =
       `${EMAIL_PREFIX}-demo@example.com`;
 
     const token =
       createAdminToken(
-        demoAdminId,
+        testAdminId,
         email,
       );
 
@@ -332,14 +332,14 @@ test(
 );
 
 test(
-  "demo admin cannot access admin 2FA settings",
+  "test admin cannot access admin 2FA settings",
   async () => {
     const email =
       `${EMAIL_PREFIX}-demo@example.com`;
 
     const token =
       createAdminToken(
-        demoAdminId,
+        testAdminId,
         email,
       );
 
@@ -360,14 +360,14 @@ test(
 );
 
 test(
-  "disabled demo admin cannot access protected routes",
+  "disabled test admin cannot access protected routes",
   async () => {
     const email =
       `${EMAIL_PREFIX}-disabled@example.com`;
 
     const token =
       createAdminToken(
-        disabledDemoAdminId,
+        disabledTestAdminId,
         email,
       );
 
@@ -388,14 +388,14 @@ test(
 );
 
 test(
-  "expired demo admin cannot access protected routes",
+  "expired test admin cannot access protected routes",
   async () => {
     const email =
       `${EMAIL_PREFIX}-expired@example.com`;
 
     const token =
       createAdminToken(
-        expiredDemoAdminId,
+        expiredTestAdminId,
         email,
       );
 

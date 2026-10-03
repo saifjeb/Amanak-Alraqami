@@ -258,3 +258,27 @@ export const parentTwoFactorChallengeLimiter =
         "Too many two-factor authentication attempts. Please try again after 10 minutes.",
     },
   });
+
+export const testAdminRegisterLimiter =
+  rateLimit({
+    windowMs:
+      60 * 60 * 1000,
+
+    limit: 20,
+
+    standardHeaders:
+      true,
+
+    legacyHeaders:
+      false,
+
+    message: {
+      success: false,
+
+      code:
+        "TEST_ADMIN_REGISTRATION_RATE_LIMITED",
+
+      message:
+        "Too many test account registration attempts. Please try again later.",
+    },
+  });

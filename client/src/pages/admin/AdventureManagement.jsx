@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../api/api.js";
+import { useAuth } from "../../hooks/useAuth.js";
 import AdminNav from "../../components/admin/AdminNav.jsx";
 import { getAdventureFallbackCover } from "../../utils/adventureVisuals.js";
 import "./AdventureManagement.css";
@@ -53,6 +54,11 @@ function getMediaUrl(path) {
 
 function AdventureManagement() {
   const navigate = useNavigate();
+
+  const { user } = useAuth();
+
+  const isFullAdmin =
+    user?.role === "admin";
 
   const [adventures, setAdventures] = useState([]);
 
@@ -857,6 +863,7 @@ function AdventureManagement() {
                           ↩ Restore
                         </button>
 
+                        {isFullAdmin && (
                         <button
                           type="button"
                           className="permanent"
@@ -865,6 +872,7 @@ function AdventureManagement() {
                         >
                           ⛔ Delete Forever
                         </button>
+                        )}
                       </div>
                     )}
                   </div>

@@ -1,0 +1,262 @@
+
+.test-register-page {
+  min-height: 100vh;
+  padding: 40px 20px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(32, 132, 255, 0.12),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      #f4f9ff,
+      #ffffff
+    );
+  color: #102a43;
+}
+
+.test-register-card {
+  width: min(100%, 520px);
+  padding: 34px;
+  border: 1px solid #dbe8f6;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow:
+    0 24px 65px
+    rgba(25, 72, 120, 0.12);
+}
+
+.test-register-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  font-weight: 800;
+  color: #123a6d;
+}
+
+.test-register-brand img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.test-register-icon,
+.test-register-success-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 18px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: #eaf4ff;
+  color: #1668c7;
+}
+
+.test-register-success-icon {
+  background: #e8f8ee;
+  color: #16834a;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.test-register-card h1 {
+  margin: 0;
+  font-size: clamp(
+    1.8rem,
+    5vw,
+    2.45rem
+  );
+  color: #102a43;
+}
+
+.test-register-lead {
+  margin: 12px 0 22px;
+  line-height: 1.7;
+  color: #5c6f82;
+}
+
+.test-register-notice {
+  padding: 13px 15px;
+  margin-bottom: 22px;
+  border-radius: 12px;
+  background: #f1f7ff;
+  color: #315f91;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.test-register-card form {
+  display: grid;
+  gap: 17px;
+}
+
+.test-register-card label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+  color: #23435f;
+}
+
+.test-register-card input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #cbd9e7;
+  border-radius: 11px;
+  outline: none;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.test-register-card input:focus {
+  border-color: #2684e6;
+  box-shadow:
+    0 0 0 3px
+    rgba(38, 132, 230, 0.12);
+}
+
+.test-register-password {
+  position: relative;
+}
+
+.test-register-password input {
+  padding-right: 50px;
+}
+
+.test-register-password button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 38px;
+  height: 38px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #55718c;
+  cursor: pointer;
+}
+
+.test-register-primary {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 20px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: #1769c2;
+  color: #ffffff;
+  text-decoration: none;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.test-register-primary:hover {
+  background: #1257a2;
+}
+
+.test-register-primary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.test-register-error,
+.test-register-disabled {
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.test-register-error {
+  background: #fff0f0;
+  color: #a52626;
+}
+
+.test-register-disabled {
+  background: #fff8e6;
+  color: #74530f;
+}
+
+.test-register-disabled p {
+  margin-bottom: 0;
+}
+
+.test-register-footer {
+  margin-top: 22px;
+  text-align: center;
+  color: #6a7d90;
+}
+
+.test-register-footer a {
+  color: #1769c2;
+  font-weight: 750;
+}
+
+.test-register-summary {
+  margin: 24px 0;
+  display: grid;
+  gap: 10px;
+}
+
+.test-register-summary div {
+  padding: 13px 14px;
+  border-radius: 11px;
+  background: #f6f9fc;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.test-register-summary span {
+  color: #6a7d90;
+}
+
+.test-register-summary strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.test-register-loading {
+  text-align: center;
+}
+
+.test-register-spinner {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 18px;
+  border: 4px solid #deebf7;
+  border-top-color: #1769c2;
+  border-radius: 50%;
+  animation:
+    test-register-spin
+    0.8s linear infinite;
+}
+
+@keyframes test-register-spin {
+  to {
+    transform:
+      rotate(360deg);
+  }
+}
+
+@media (max-width: 560px) {
+  .test-register-card {
+    padding: 25px 20px;
+  }
+
+  .test-register-summary div {
+    display: grid;
+  }
+
+  .test-register-summary strong {
+    text-align: left;
+  }
+}

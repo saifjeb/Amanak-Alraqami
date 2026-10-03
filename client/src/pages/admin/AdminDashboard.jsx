@@ -16,12 +16,18 @@ import {
   UsersRound,
 } from "lucide-react";
 import { api } from "../../api/api.js";
+import { useAuth } from "../../hooks/useAuth.js";
 import { useLanguage } from "../../i18n/useLanguage.js";
 import AdminNav from "../../components/admin/AdminNav.jsx";
 import "./AdminDashboard.css";
 
 function AdminDashboard() {
   const navigate = useNavigate();
+
+  const { user } = useAuth();
+
+  const isFullAdmin =
+    user?.role === "admin";
   const { pick, isArabic } = useLanguage();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -175,7 +181,14 @@ function AdminDashboard() {
         "Configure language, display density, and admin preferences.",
       ),
     },
-  ];
+  ].filter(
+    (item) =>
+      isFullAdmin ||
+      ![
+        "/admin/security",
+        "/admin/settings",
+      ].includes(item.to),
+  );
 
   if (loading) {
     return (

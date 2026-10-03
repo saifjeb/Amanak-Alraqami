@@ -24,6 +24,7 @@ const AdminLogin = lazy(() => import("../pages/auth/admin/AdminLogin.jsx"));
 const AdminTwoFactor = lazy(() => import("../pages/auth/admin/AdminTwoFactor.jsx"));
 const AdminForgotPassword = lazy(() => import("../pages/auth/admin/AdminForgotPassword.jsx"));
 const AdminResetPassword = lazy(() => import("../pages/auth/admin/AdminResetPassword.jsx"));
+const TestAdminRegister = lazy(() => import("../pages/auth/admin/TestAdminRegister.jsx"));
 const ChildDashboard = lazy(() => import("../pages/child/ChildDashboard.jsx"));
 const Adventures = lazy(() => import("../pages/child/Adventures.jsx"));
 const AdventureDetails = lazy(() => import("../pages/child/AdventureDetails.jsx"));
@@ -44,6 +45,7 @@ const MediaManagement = lazy(() => import("../pages/admin/MediaManagement.jsx"))
 const AdminAnalytics = lazy(() => import("../pages/admin/AdminAnalytics.jsx"));
 const AdminSecurity = lazy(() => import("../pages/admin/AdminSecurity.jsx"));
 const AdminSettings = lazy(() => import("../pages/admin/AdminSettings.jsx"));
+const TestAdminAccess = lazy(() => import("../pages/admin/TestAdminAccess.jsx"));
 const LegalPage = lazy(() => import("../pages/legal/LegalPage.jsx"));
 const NotFound = lazy(() => import("../pages/NotFound.jsx"));
 
@@ -111,6 +113,11 @@ function AppRoutes() {
       <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
 
       <Route path="/admin/reset-password" element={<AdminResetPassword />} />
+
+      <Route
+        path="/test-admin/register"
+        element={<TestAdminRegister />}
+      />
 
       {/* Parent protected routes */}
       <Route
@@ -207,7 +214,10 @@ function AppRoutes() {
       <Route
         path="/admin/security"
         element={
-          <ProtectedRoute allowedRole="admin">
+          <ProtectedRoute
+            allowedRole="admin"
+            requireFullAdmin
+          >
             <AdminSecurity />
           </ProtectedRoute>
         }
@@ -216,8 +226,23 @@ function AppRoutes() {
       <Route
         path="/admin/settings"
         element={
-          <ProtectedRoute allowedRole="admin">
+          <ProtectedRoute
+            allowedRole="admin"
+            requireFullAdmin
+          >
             <AdminSettings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/test-access"
+        element={
+          <ProtectedRoute
+            allowedRole="admin"
+            requireFullAdmin
+          >
+            <TestAdminAccess />
           </ProtectedRoute>
         }
       />

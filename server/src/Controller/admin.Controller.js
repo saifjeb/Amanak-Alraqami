@@ -321,6 +321,89 @@ export const adminTwoFactorChallengeController = async (req, res, next) => {
       });
     }
 
+    if (
+      admin.is_enabled !== true
+    ) {
+      res.clearCookie(
+        "adminAccessToken",
+        adminCookieOptions,
+      );
+
+      clearAdminTwoFactorChallenge(
+        res,
+      );
+
+      return res.status(403).json({
+        success: false,
+
+        code:
+          "ADMIN_ACCOUNT_DISABLED",
+
+        message:
+          "This administrator account is disabled.",
+      });
+    }
+
+    if (
+      admin.access_expires_at
+    ) {
+      const expiresAt =
+        new Date(
+          admin.access_expires_at,
+        ).getTime();
+
+      if (
+        !Number.isFinite(
+          expiresAt,
+        ) ||
+        expiresAt <=
+          Date.now()
+      ) {
+        res.clearCookie(
+          "adminAccessToken",
+          adminCookieOptions,
+        );
+
+        clearAdminTwoFactorChallenge(
+          res,
+        );
+
+        return res.status(403).json({
+          success: false,
+
+          code:
+            "ADMIN_ACCESS_EXPIRED",
+
+          message:
+            "This administrator access has expired.",
+        });
+      }
+    }
+
+    if (
+      admin.role !== "admin" &&
+      admin.role !== "test_admin"
+    ) {
+      res.clearCookie(
+        "adminAccessToken",
+        adminCookieOptions,
+      );
+
+      clearAdminTwoFactorChallenge(
+        res,
+      );
+
+      return res.status(403).json({
+        success: false,
+
+        code:
+          "ADMIN_ROLE_INVALID",
+
+        message:
+          "This administrator role is not permitted.",
+      });
+    }
+
     const settings = await getTwoFactorSettings("admin", admin.id);
 
     if (

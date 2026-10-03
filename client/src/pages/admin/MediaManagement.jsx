@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/api.js";
+import { useAuth } from "../../hooks/useAuth.js";
 import AdminNav from "../../components/admin/AdminNav.jsx";
 import "./MediaManagement.css";
 
@@ -89,6 +90,11 @@ function markImageUnavailable(event) {
 
 function MediaManagement() {
   const navigate = useNavigate();
+
+  const { user } = useAuth();
+
+  const isFullAdmin =
+    user?.role === "admin";
   const fileInputRef = useRef(null);
   const [media, setMedia] = useState([]);
   const [trash, setTrash] = useState([]);
@@ -669,6 +675,7 @@ function MediaManagement() {
                           ↩ Restore
                         </button>
 
+                        {isFullAdmin && (
                         <button
                           type="button"
                           className="permanent"
@@ -677,6 +684,7 @@ function MediaManagement() {
                         >
                           ⛔ Delete Forever
                         </button>
+                        )}
                       </>
                     )}
                   </div>

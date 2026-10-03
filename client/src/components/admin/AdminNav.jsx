@@ -29,6 +29,9 @@ function AdminNav() {
   const { user, adminLogout } = useAuth();
   const { pick } = useLanguage();
 
+  const isFullAdmin =
+    user?.role === "admin";
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const workspaceItems = [
@@ -183,29 +186,83 @@ function AdminNav() {
                 <span>{pick("التحليلات", "Analytics")}</span>
               </NavLink>
 
-              <NavLink
-                to="/admin/security"
-                className={({ isActive }) =>
-                  isActive ? "admin-side-link active" : "admin-side-link"
-                }
-                onClick={() => setMobileOpen(false)}
-              >
-                <ShieldCheck size={20} strokeWidth={2.1} />
+              {isFullAdmin && (
+                <NavLink
+                  to="/admin/test-access"
+                  className={({ isActive }) =>
+                    isActive
+                      ? "admin-side-link active"
+                      : "admin-side-link"
+                  }
+                  onClick={() =>
+                    setMobileOpen(false)
+                  }
+                >
+                  <UsersRound
+                    size={20}
+                    strokeWidth={2.1}
+                  />
 
-                <span>{pick("الأمان والتدقيق", "Security / Audit")}</span>
-              </NavLink>
+                  <span>
+                    {pick(
+                      "إدارة الحسابات التجريبية",
+                      "Test Admin Access",
+                    )}
+                  </span>
+                </NavLink>
+              )}
 
-              <NavLink
-                to="/admin/settings"
-                className={({ isActive }) =>
-                  isActive ? "admin-side-link active" : "admin-side-link"
-                }
-                onClick={() => setMobileOpen(false)}
-              >
-                <Settings size={20} strokeWidth={2.1} />
+              {isFullAdmin && (
+                <NavLink
+                  to="/admin/security"
+                  className={({ isActive }) =>
+                    isActive
+                      ? "admin-side-link active"
+                      : "admin-side-link"
+                  }
+                  onClick={() =>
+                    setMobileOpen(false)
+                  }
+                >
+                  <ShieldCheck
+                    size={20}
+                    strokeWidth={2.1}
+                  />
 
-                <span>{pick("الإعدادات", "Settings")}</span>
-              </NavLink>
+                  <span>
+                    {pick(
+                      "الأمان والتدقيق",
+                      "Security / Audit",
+                    )}
+                  </span>
+                </NavLink>
+              )}
+
+              {isFullAdmin && (
+                <NavLink
+                  to="/admin/settings"
+                  className={({ isActive }) =>
+                    isActive
+                      ? "admin-side-link active"
+                      : "admin-side-link"
+                  }
+                  onClick={() =>
+                    setMobileOpen(false)
+                  }
+                >
+                  <Settings
+                    size={20}
+                    strokeWidth={2.1}
+                  />
+
+                  <span>
+                    {pick(
+                      "الإعدادات",
+                      "Settings",
+                    )}
+                  </span>
+                </NavLink>
+              )}
             </nav>
           </section>
         </div>
@@ -233,7 +290,9 @@ function AdminNav() {
         </div>
 
         <div className="admin-topbar-actions">
-          <span className="admin-role-badge">ADMIN</span>
+          <span className="admin-role-badge">
+            {isFullAdmin ? "ADMIN" : "TEST ADMIN"}
+          </span>
 
           <LanguageToggle compact />
 

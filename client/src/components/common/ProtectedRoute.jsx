@@ -1,7 +1,11 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 
-function ProtectedRoute({ children, allowedRole }) {
+function ProtectedRoute({
+  children,
+  allowedRole,
+  requireFullAdmin = false,
+}) {
   const { user, role, loading } = useAuth();
 
   const location = useLocation();
@@ -36,6 +40,20 @@ function ProtectedRoute({ children, allowedRole }) {
   if (role !== allowedRole) {
     return <Navigate to="/" replace />;
   }
+
+  if (
+    requireFullAdmin &&
+    allowedRole === "admin" &&
+    user?.role !== "admin"
+  ) {
+    return (
+      <Navigate
+        to="/admin/dashboard"
+        replace
+      />
+    );
+  }
+
   return children;
 }
 

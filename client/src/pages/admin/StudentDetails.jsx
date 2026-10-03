@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/api.js";
+import { useAuth } from "../../hooks/useAuth.js";
 import "./StudentDetails.css";
 const avatarIcons = {
   avatar1: "🧭",
@@ -27,6 +28,11 @@ function StudentDetails() {
   const { studentId } = useParams();
 
   const navigate = useNavigate();
+
+  const { user } = useAuth();
+
+  const isFullAdmin =
+    user?.role === "admin";
 
   const [student, setStudent] = useState(null);
 
@@ -373,6 +379,7 @@ function StudentDetails() {
           </button>
         </section>
 
+        {isFullAdmin && (
         <section className="student-danger-zone">
           <div className="student-danger-content">
             <div className="student-danger-icon">⚠️</div>
@@ -404,9 +411,10 @@ function StudentDetails() {
             Delete Permanently
           </button>
         </section>
+        )}
       </div>
 
-      {deleteModalOpen && (
+      {isFullAdmin && deleteModalOpen && (
         <div
           className="student-delete-modal-backdrop"
           onMouseDown={closeDeleteModal}

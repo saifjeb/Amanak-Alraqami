@@ -128,7 +128,7 @@ export const protectAdmin = async (
 
     if (
       admin.role !== "admin" &&
-      admin.role !== "demo_admin"
+      admin.role !== "test_admin"
     ) {
       clearAdminCookies(res);
 

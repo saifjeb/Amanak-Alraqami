@@ -25,7 +25,11 @@ import { getAdminAnalyticsController } from "../Controller/adminAnalytics.Contro
 
 import { getAdminAuditLogsController } from "../Controller/adminAudit.Controller.js";
 
-import { adminLoginValidation } from "../Validation/admin.Validation.js";
+import {
+  adminLoginValidation,
+  testAdminRegistrationValidation,
+  testAdminRegistrationToggleValidation,
+} from "../Validation/admin.Validation.js";
 
 import { validate } from "../Middleware/validate.Middleware.js";
 
@@ -90,6 +94,7 @@ import {
   adminTwoFactorSetupLimiter,
   adminTwoFactorConfirmLimiter,
   adminTwoFactorRecoveryLimiter,
+  testAdminRegisterLimiter,
 } from "../Middleware/rateLimit.Middleware.js";
 
 import {
@@ -102,6 +107,15 @@ import {
 } from "../Controller/media.Controller.js";
 
 import { uploadMediaImage } from "../Middleware/mediaUpload.Middleware.js";
+
+import {
+  getTestAdminRegistrationStatusController,
+  registerTestAdminController,
+  getTestAdminAccessController,
+  updateTestAdminRegistrationController,
+  disableTestAdminController,
+  enableTestAdminController,
+} from "../Controller/testAdminAccess.Controller.js";
 
 const router = express.Router();
 
@@ -130,7 +144,60 @@ router.post(
   adminTwoFactorChallengeController,
 );
 
+router.get(
+  "/test-registration/status",
+  getTestAdminRegistrationStatusController,
+);
+
+router.post(
+  "/test-registration",
+  testAdminRegisterLimiter,
+  validate(
+    testAdminRegistrationValidation,
+  ),
+  registerTestAdminController,
+);
+
 router.use(auditAdminAction);
+
+router.get(
+  "/test-access",
+  protectAdmin,
+  requireFullAdmin,
+  getTestAdminAccessController,
+);
+
+router.patch(
+  "/test-access/registration",
+  protectAdmin,
+  requireFullAdmin,
+  validate(
+    testAdminRegistrationToggleValidation,
+  ),
+  updateTestAdminRegistrationController,
+);
+
+router.patch(
+  "/test-access/accounts/:id/disable",
+  protectAdmin,
+  requireFullAdmin,
+  validateIdParam(
+    "id",
+    "test administrator ID",
+  ),
+  disableTestAdminController,
+);
+
+router.patch(
+  "/test-access/accounts/:id/enable",
+  protectAdmin,
+  requireFullAdmin,
+  validateIdParam(
+    "id",
+    "test administrator ID",
+  ),
+  enableTestAdminController,
+);
 
 router.get("/me", protectAdmin, adminMeController);
 
